@@ -2,135 +2,134 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Push-up Coach</title>
 
 <style>
-:root {
-  color-scheme: light dark;
-  font-family: system-ui, sans-serif;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
-  padding: 12px;
-  max-width: 560px;
+  padding: 20px;
+  background: #101218;
+  color: #f2f2f2;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  max-width: 700px;
   margin: auto;
 }
 
-.card {
-  border: 1px solid #8884;
-  border-radius: 12px;
-  padding: 12px;
-  margin: 10px 0;
+h1 { margin-bottom: 5px; }
+
+.subtitle {
+  color: #999;
+  margin-bottom: 22px;
 }
 
-h2 {
-  margin: 0 0 8px;
-  font-size: 1rem;
+.card {
+  background: #1b1f29;
+  border: 1px solid #303644;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 15px;
+}
+
+button {
+  background: #a7ff5a;
+  color: #111;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 5px 3px 5px 0;
+}
+
+button.secondary {
+  background: #343b4b;
+  color: white;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.status {
+  color: #a7ff5a;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: .9rem;
+  margin-top: 10px;
+  font-size: 14px;
 }
 
-td, th {
-  padding: 4px;
-  text-align: right;
-  border-bottom: 1px solid #8883;
+th, td {
+  padding: 9px 5px;
+  border-bottom: 1px solid #343b4b;
+  text-align: center;
 }
 
-td:first-child, th:first-child {
-  text-align: left;
+th { color: #a7ff5a; }
+
+.big {
+  font-size: 48px;
+  font-weight: bold;
+  color: #a7ff5a;
 }
 
-button {
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 0;
-  background: #2563eb;
-  color: #fff;
-  font-size: 1rem;
-  margin: 4px 4px 4px 0;
-}
+.muted { color: #999; }
 
-button.alt {
-  background: #6b7280;
+.feedback {
+  font-size: 18px;
+  margin-top: 10px;
+  font-weight: bold;
 }
 
 input {
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #8886;
-  width: 9em;
-}
-
-.bar {
-  height: 8px;
-  background: #8883;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-#prog {
-  height: 100%;
-  width: 0;
-  background: #2563eb;
-}
-
-.ok, .bad {
+  width: 100%;
   padding: 10px;
-  border-radius: 8px;
-  margin: 4px 0;
-  font-weight: 600;
+  margin: 6px 0 12px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #101218;
+  color: white;
 }
 
-.ok {
-  background: #16a34a33;
-}
-
-.bad {
-  background: #dc262633;
-}
-
-#reps {
-  font-size: 2.4rem;
-  font-weight: 700;
-}
-
-#log {
-  font-size: .85rem;
-  max-height: 140px;
-  overflow: auto;
-}
-
-#status {
-  display: block;
-  margin-top: 8px;
-  overflow-wrap: anywhere;
+.log {
+  max-height: 160px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: #ccc;
 }
 </style>
 </head>
 
 <body>
+<div class="container">
 
-<!-- CONNECTION -->
+<h1>Push-up Coach</h1>
+<div class="subtitle">ESP32 Bluetooth posture monitoring</div>
 
 <div class="card">
-  <h2>Connection</h2>
+  <h3>Bluetooth connection</h3>
+
   <button onclick="connect()">Connect ESP32</button>
-  <button class="alt" onclick="disconnect()">Disconnect</button>
-  <span id="status">Not connected</span>
+  <button class="secondary" onclick="disconnect()">Disconnect</button>
+
+  <div class="status" id="status">Not connected</div>
 </div>
 
-
-<!-- LIVE SENSORS -->
-
 <div class="card">
-  <h2>Live sensors (°)</h2>
+  <h3>Live sensor readings</h3>
 
   <table>
     <thead>
@@ -140,131 +139,125 @@ input {
         <th>Lateral</th>
       </tr>
     </thead>
-    <tbody id="sens"></tbody>
+    <tbody>
+      <tr><td>Left upper arm</td><td id="s0">--</td><td id="l0">--</td></tr>
+      <tr><td>Left wrist</td><td id="s1">--</td><td id="l1">--</td></tr>
+      <tr><td>Right upper arm</td><td id="s2">--</td><td id="l2">--</td></tr>
+      <tr><td>Right wrist</td><td id="s3">--</td><td id="l3">--</td></tr>
+    </tbody>
   </table>
 
-  <p>Chest height: <b id="dist">–</b> mm</p>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Derived</th>
-        <th>Left</th>
-        <th>Right</th>
-      </tr>
-    </thead>
-    <tbody id="der"></tbody>
-  </table>
+  <p>Chest distance: <strong id="distance">--</strong> mm</p>
 </div>
-
-
-<!-- CALIBRATION -->
 
 <div class="card">
-  <h2>Calibration (15 s)</h2>
+  <h3>Calibration</h3>
+  <p class="muted">Complete all three calibration positions.</p>
 
-  <input id="pname" placeholder="Profile name" value="me">
-
-  <button onclick="startCal()">Start calibration</button>
-
-  <div id="calMsg">
-    Phases: push-up motion → arms wide → elbows tucked (5 s each)
-  </div>
-
-  <div class="bar">
-    <div id="prog"></div>
-  </div>
+  <p id="calStatus">Not calibrated</p>
+  <button onclick="startCal()">Start 15-second calibration</button>
 </div>
-
-
-<!-- TRAINING -->
 
 <div class="card">
-  <h2>Training</h2>
+  <h3>Training</h3>
 
-  <button id="tbtn" onclick="toggleTrain()">Start training</button>
-  <button class="alt" onclick="resetReps()">Reset</button>
+  <div class="big" id="reps">0</div>
+  <div class="muted">Completed repetitions</div>
 
-  <div id="reps">0</div>
-  <div id="fb"></div>
-  <div id="log"></div>
+  <p class="feedback" id="feedback">Connect and calibrate first.</p>
+
+  <button onclick="toggleTrain()" id="tbtn">Start training</button>
+  <button class="secondary" onclick="resetReps()">Reset reps</button>
 </div>
 
+<div class="card">
+  <h3>Profile</h3>
+
+  <label>Profile name</label>
+  <input id="profileName" placeholder="Your name">
+
+  <button onclick="saveProfile()">Save profile</button>
+  <p id="profileStatus" class="muted"></p>
+</div>
+
+<div class="card">
+  <h3>Training log</h3>
+  <div class="log" id="log">No training activity yet.</div>
+  <button class="secondary" onclick="clearLog()">Clear log</button>
+</div>
+
+</div>
 
 <script>
-
-// ======================================
-// BLUETOOTH CONFIGURATION
-// ======================================
-
 const SVC = '12345678-1234-1234-1234-1234567890ab';
-
 const CHR = '12345678-1234-1234-1234-1234567890ac';
 
 let bleDevice = null;
 let bleCharacteristic = null;
 
+let sensorData = Array.from({length: 4}, () => ({
+  sag: 0,
+  lat: 0
+}));
+
+let distance = 0;
+
+let calibration = null;
+let calSamples = [];
+let calPhase = 0;
+let calTimer = null;
+
+let mode = 'idle';
+let reps = 0;
+let previousAngle = null;
+let repState = 'up';
+let lastRepTime = 0;
+
+let profile = null;
+let logEntries = [];
+
 const $ = id => document.getElementById(id);
 
-
-// ======================================
-// BLUETOOTH CONNECTION
-// ======================================
+function setStatus(message) {
+  $('status').textContent = message;
+}
 
 async function connect() {
-
   try {
-
     if (!navigator.bluetooth) {
-      throw new Error("Web Bluetooth is not supported. Use Chrome.");
+      throw new Error('Web Bluetooth is unavailable. Open this page in Chrome on Android over HTTPS.');
     }
 
-    $('status').textContent = 'Searching for PushupCoach...';
+    setStatus('Searching for ESP32 service...');
 
-    // Search only for the ESP32 name
-
+    // Filter by the ESP32 service UUID instead of its device name.
     bleDevice = await navigator.bluetooth.requestDevice({
-
-      filters: [
-        { name: 'PushupCoach' }
-      ],
-
-      optionalServices: [SVC]
-
+      filters: [{ services: [SVC] }]
     });
 
-    console.log('Selected:', bleDevice.name);
+    setStatus('Found device: ' + (bleDevice.name || 'Unnamed device'));
 
-    $('status').textContent = 'Found: ' + bleDevice.name;
+    bleDevice.addEventListener('gattserverdisconnected', () => {
+      bleCharacteristic = null;
+      setStatus('Disconnected from ESP32');
 
-    bleDevice.addEventListener(
-      'gattserverdisconnected',
-      () => {
-
-        $('status').textContent = 'Disconnected';
-
-        bleCharacteristic = null;
-
-        if (mode !== 'cal') {
-          mode = 'idle';
-          $('tbtn').textContent = 'Start training';
-        }
-
+      if (mode === 'train') {
+        mode = 'idle';
+        $('tbtn').textContent = 'Start training';
       }
-    );
+    });
 
-    $('status').textContent = 'Connecting to ESP32...';
+    setStatus('Connecting...');
 
     const server = await bleDevice.gatt.connect();
 
-    $('status').textContent = 'Finding service...';
+    setStatus('Finding BLE service...');
 
     const service = await server.getPrimaryService(SVC);
 
-    $('status').textContent = 'Finding sensor characteristic...';
+    setStatus('Finding sensor characteristic...');
 
-    bleCharacteristic =
-      await service.getCharacteristic(CHR);
+    bleCharacteristic = await service.getCharacteristic(CHR);
 
     await bleCharacteristic.startNotifications();
 
@@ -273,666 +266,353 @@ async function connect() {
       event => onData(event.target.value)
     );
 
-    $('status').textContent =
-      'Connected to ' + bleDevice.name + ' ✓';
+    setStatus('Connected to ' + (bleDevice.name || 'ESP32') + ' ✓');
 
-    console.log('Bluetooth connected successfully');
-
-  }
-
-  catch(error) {
-
+  } catch (error) {
     console.error(error);
-
-    $('status').textContent = 'Error: ' + error.message;
-
+    setStatus('Error: ' + error.message);
   }
-
 }
 
-
-// ======================================
-// DISCONNECT
-// ======================================
-
-function disconnect() {
-
-  if (bleDevice && bleDevice.gatt.connected) {
+async function disconnect() {
+  if (bleDevice && bleDevice.gatt && bleDevice.gatt.connected) {
     bleDevice.gatt.disconnect();
   }
 
   bleCharacteristic = null;
   mode = 'idle';
-
-  $('status').textContent = 'Disconnected';
   $('tbtn').textContent = 'Start training';
-
+  setStatus('Disconnected');
 }
 
+function onData(value) {
+  if (value.byteLength < 18) return;
 
-// ======================================
-// SENSOR CONFIGURATION
-// ======================================
+  const view = new DataView(
+    value.buffer,
+    value.byteOffset,
+    value.byteLength
+  );
 
-const wrap = a => {
+  for (let i = 0; i < 4; i++) {
+    const offset = i * 4;
 
-  while(a > 180) a -= 360;
-  while(a < -180) a += 360;
+    sensorData[i].sag = view.getInt16(offset, true) / 100;
+    sensorData[i].lat = view.getInt16(offset + 2, true) / 100;
 
-  return a;
-
-};
-
-const clamp01 = x => Math.max(0, Math.min(1, x));
-
-const mean = (a, f) =>
-  a.reduce((s,x) => s + f(x), 0) / a.length;
-
-const NAMES = [
-  'L upper arm',
-  'L wrist',
-  'R upper arm',
-  'R wrist'
-];
-
-const SIDES = {
-  L: {u:0, w:1, n:'Left'},
-  R: {u:2, w:3, n:'Right'}
-};
-
-let S = [{},{},{},{}];
-let dist = 0;
-let prof = null;
-let mode = 'idle';
-let cal = null;
-
-
-// ======================================
-// UI SETUP
-// ======================================
-
-$('sens').innerHTML = NAMES.map((n,i) =>
-
-  `<tr>
-    <td>${n}</td>
-    <td id="s${i}a">–</td>
-    <td id="s${i}b">–</td>
-  </tr>`
-
-).join('');
-
-
-$('der').innerHTML = ['elbow','flare','wrist'].map(k =>
-
-  `<tr>
-    <td>${{
-      elbow:'Elbow angle',
-      flare:'Arm flare dev.',
-      wrist:'Wrist dev.'
-    }[k]}</td>
-
-    <td id="L${k}">–</td>
-    <td id="R${k}">–</td>
-  </tr>`
-
-).join('');
-
-
-// Load saved profile
-
-try {
-
-  prof = JSON.parse(localStorage.getItem('pushupProfile'));
-
-  if(prof) {
-    $('calMsg').textContent =
-      'Saved profile loaded: ' + prof.name;
+    $('s' + i).textContent = sensorData[i].sag.toFixed(1) + '°';
+    $('l' + i).textContent = sensorData[i].lat.toFixed(1) + '°';
   }
 
-} catch(e) {
-  console.error(e);
+  distance = view.getUint16(16, true);
+  $('distance').textContent = distance;
+
+  if (mode === 'cal') {
+    collectCalibration();
+  }
+
+  if (mode === 'train') {
+    updateTraining();
+  }
 }
 
-
-// ======================================
-// RECEIVE BLUETOOTH DATA
-// ======================================
-
-function onData(dv) {
-
-  for(let i = 0; i < 4; i++) {
-
-    S[i] = {
-
-      sag: dv.getInt16(i * 4, true) / 100,
-
-      lat: dv.getInt16(i * 4 + 2, true) / 100
-
-    };
-
-  }
-
-  dist = dv.getUint16(16, true);
-
-  const m = derive();
-
-  render(m);
-
-  if(mode === 'cal') {
-
-    calStep(m);
-
-  }
-
-  else if(mode === 'train' && prof) {
-
-    train(m);
-
-  }
-
+function wrapAngle(angle) {
+  while (angle > 180) angle -= 360;
+  while (angle < -180) angle += 360;
+  return angle;
 }
 
+function getElbowAngles() {
+  const left = 180 - Math.abs(
+    wrapAngle(sensorData[0].sag - sensorData[1].sag)
+  );
 
-// ======================================
-// DERIVED ANGLES
-// ======================================
+  const right = 180 - Math.abs(
+    wrapAngle(sensorData[2].sag - sensorData[3].sag)
+  );
 
-function derive() {
-
-  const m = {};
-
-  for(const k in SIDES) {
-
-    const {u,w} = SIDES[k];
-
-    m[k] = {
-
-      elbow: 180 - Math.abs(
-        wrap(S[u].sag - S[w].sag)
-      ),
-
-      lu: S[u].lat,
-
-      lw: S[w].lat
-
-    };
-
-    if(prof) {
-
-      m[k].flare = Math.abs(
-        wrap(S[u].lat - prof[k].tuckU)
-      );
-
-      m[k].wrist = Math.abs(
-        wrap(S[w].lat - prof[k].tuckW)
-      );
-
-    }
-
-  }
-
-  return m;
-
+  return {
+    left: Math.max(0, Math.min(180, left)),
+    right: Math.max(0, Math.min(180, right))
+  };
 }
-
-
-// ======================================
-// DISPLAY SENSOR DATA
-// ======================================
-
-function render(m) {
-
-  S.forEach((s,i) => {
-
-    $(`s${i}a`).textContent = s.sag.toFixed(1);
-
-    $(`s${i}b`).textContent = s.lat.toFixed(1);
-
-  });
-
-  $('dist').textContent = dist;
-
-  for(const k in SIDES) {
-
-    for(const f of ['elbow','flare','wrist']) {
-
-      $(k + f).textContent =
-        m[k][f] === undefined
-          ? '–'
-          : m[k][f].toFixed(0);
-
-    }
-
-  }
-
-}
-
-
-// ======================================
-// CALIBRATION
-// ======================================
-
-const PH = [
-
-  '1/3 Push-up motion: go down and up slowly',
-
-  '2/3 Open both arms wide sideways',
-
-  '3/3 Tuck elbows in, push-up position, hold'
-
-];
-
 
 function startCal() {
-
-  if(!bleCharacteristic) {
-
-    alert('Connect ESP32 first!');
-
+  if (!bleCharacteristic) {
+    alert('Connect to ESP32 first.');
     return;
-
   }
 
-  cal = {
+  if (mode === 'train') {
+    alert('Stop training before calibration.');
+    return;
+  }
 
-    t0: performance.now(),
-
-    a: {L:[], R:[]},
-
-    d: [],
-
-    o: {L:[], R:[]},
-
-    t: {L:[], R:[]}
-
-  };
+  clearInterval(calTimer);
 
   mode = 'cal';
+  calPhase = 0;
+  calSamples = [];
 
+  $('calStatus').textContent =
+    'Phase 1/3: Perform normal push-up movement for 5 seconds.';
+
+  let remaining = 15;
+
+  calTimer = setInterval(() => {
+    remaining--;
+
+    if (remaining === 10) {
+      calPhase = 1;
+      $('calStatus').textContent =
+        'Phase 2/3: Hold arms wide for 5 seconds.';
+    }
+
+    if (remaining === 5) {
+      calPhase = 2;
+      $('calStatus').textContent =
+        'Phase 3/3: Hold elbows tucked for 5 seconds.';
+    }
+
+    if (remaining <= 0) {
+      clearInterval(calTimer);
+      finishCalibration();
+    }
+  }, 1000);
 }
 
-
-function calStep(m) {
-
-  const t = (performance.now() - cal.t0) / 1000;
-
-  const ph = Math.min(2, Math.floor(t / 5));
-
-  $('calMsg').textContent =
-    PH[ph] + ' (' + Math.max(0, Math.ceil(15-t)) + 's)';
-
-  $('prog').style.width =
-    Math.min(100, t / 15 * 100) + '%';
-
-
-  for(const k in SIDES) {
-
-    if(ph === 0) {
-
-      cal.a[k].push(m[k].elbow);
-
-    }
-
-    else if(ph === 1) {
-
-      cal.o[k].push([m[k].lu, m[k].lw]);
-
-    }
-
-    else {
-
-      cal.t[k].push([m[k].lu, m[k].lw]);
-
-    }
-
-  }
-
-  if(ph === 0) {
-    cal.d.push(dist);
-  }
-
-  if(t >= 15) {
-    finishCal();
-  }
-
+function collectCalibration() {
+  calSamples.push({
+    phase: calPhase,
+    sensors: sensorData.map(s => ({
+      sag: s.sag,
+      lat: s.lat
+    }))
+  });
 }
 
+function averageSamples(samples, phase, sensor, axis) {
+  const selected = samples.filter(s => s.phase === phase);
 
-function finishCal() {
+  if (!selected.length) return 0;
+
+  const total = selected.reduce(
+    (sum, s) => sum + s.sensors[sensor][axis],
+    0
+  );
+
+  return total / selected.length;
+}
+
+function finishCalibration() {
+  if (calSamples.length < 10) {
+    mode = 'idle';
+    $('calStatus').textContent =
+      'Not enough sensor data. Check connection and retry.';
+    return;
+  }
+
+  calibration = {
+    normal: {},
+    wide: {},
+    tucked: {}
+  };
+
+  const names = ['normal', 'wide', 'tucked'];
+
+  for (let phase = 0; phase < 3; phase++) {
+    for (let i = 0; i < 4; i++) {
+      calibration[names[phase]][i] = {
+        sag: averageSamples(calSamples, phase, i, 'sag'),
+        lat: averageSamples(calSamples, phase, i, 'lat')
+      };
+    }
+  }
 
   mode = 'idle';
 
-  const p = {
+  $('calStatus').textContent = 'Calibration complete ✓';
 
-    name: $('pname').value || 'me',
+  addLog('Calibration completed');
 
-    dMin: Math.min(...cal.d),
-
-    dMax: Math.max(...cal.d)
-
-  };
-
-  p.dr = p.dMax - p.dMin;
-
-
-  for(const k in SIDES) {
-
-    const e = cal.a[k];
-
-    const q = {
-
-      eBot: Math.min(...e),
-
-      eTop: Math.max(...e)
-
-    };
-
-    q.tuckU = mean(cal.t[k], x => x[0]);
-
-    q.tuckW = mean(cal.t[k], x => x[1]);
-
-    q.openU = mean(cal.o[k], x => x[0]);
-
-    q.openW = mean(cal.o[k], x => x[1]);
-
-
-    q.flareMax = Math.max(
-
-      8,
-
-      Math.abs(wrap(q.openU - q.tuckU)) * 0.5
-
-    );
-
-    q.wristMax = Math.max(
-
-      8,
-
-      Math.abs(wrap(q.openW - q.tuckW)) * 0.5
-
-    );
-
-    p[k] = q;
-
-
-    if(q.eTop - q.eBot < 25) {
-
-      $('calMsg').textContent =
-
-        SIDES[k].n +
-        ' arm: not enough movement in phase 1 – redo calibration';
-
-      return;
-
-    }
-
+  if (profile) {
+    profile.calibration = calibration;
+    localStorage.setItem('pushupProfile', JSON.stringify(profile));
   }
-
-
-  prof = p;
-
-  localStorage.setItem(
-    'pushupProfile',
-    JSON.stringify(p)
-  );
-
-  $('calMsg').textContent =
-    'Calibration done for ' + p.name + ' ✓';
-
-  $('prog').style.width = '100%';
-
 }
 
+function getPostureFeedback() {
+  if (!calibration) return 'Calibration required.';
 
-// ======================================
-// TRAINING
-// ======================================
+  const angles = getElbowAngles();
 
-let rep = {
+  const averageAngle = (angles.left + angles.right) / 2;
 
-  n:0,
+  const normalLeft = calibration.normal[0].lat;
+  const normalRight = calibration.normal[2].lat;
 
-  state:'top',
+  const leftDeviation = Math.abs(
+    sensorData[0].lat - normalLeft
+  );
 
-  min:1,
+  const rightDeviation = Math.abs(
+    sensorData[2].lat - normalRight
+  );
 
-  prev:1,
+  if (leftDeviation > 20 || rightDeviation > 20) {
+    return 'Keep your arms aligned.';
+  }
 
-  iss:new Set()
+  if (Math.abs(angles.left - angles.right) > 25) {
+    return 'Balance both arms.';
+  }
 
-};
+  if (averageAngle < 65) {
+    return 'Push upward.';
+  }
 
-let cnt = {};
+  if (averageAngle > 150) {
+    return 'Lower your body with control.';
+  }
 
+  return 'Good form. Keep going!';
+}
 
-const chk = (key,c) => {
+function updateTraining() {
+  const angles = getElbowAngles();
+  const averageAngle = (angles.left + angles.right) / 2;
 
-  cnt[key] = c ? (cnt[key] || 0) + 1 : 0;
+  $('feedback').textContent = getPostureFeedback();
 
-  return cnt[key] >= 5;
+  if (previousAngle === null) {
+    previousAngle = averageAngle;
+    return;
+  }
 
-};
+  const now = Date.now();
 
+  // A rep is counted after moving down and returning up.
+  if (
+    repState === 'up' &&
+    averageAngle < 90
+  ) {
+    repState = 'down';
+  }
 
-const log = s => {
+  if (
+    repState === 'down' &&
+    averageAngle > 145 &&
+    now - lastRepTime > 700
+  ) {
+    reps++;
+    lastRepTime = now;
+    repState = 'up';
 
-  $('log').innerHTML =
-    `<div>${s}</div>` + $('log').innerHTML;
+    $('reps').textContent = reps;
+    addLog('Completed repetition ' + reps);
+  }
 
-};
-
+  previousAngle = averageAngle;
+}
 
 function toggleTrain() {
-
-  if(mode === 'train') {
-
+  if (mode === 'train') {
     mode = 'idle';
-
     $('tbtn').textContent = 'Start training';
-
+    $('feedback').textContent = 'Training stopped.';
+    addLog('Training stopped. Reps: ' + reps);
     return;
-
   }
 
-  if(!bleCharacteristic) {
-
-    alert('Connect ESP32 first');
-
+  if (!bleCharacteristic) {
+    alert('Connect to ESP32 first.');
     return;
-
   }
 
-  if(!prof) {
-
-    alert('Calibrate first');
-
+  if (!calibration) {
+    alert('Complete calibration first.');
     return;
-
   }
 
   mode = 'train';
+  previousAngle = null;
+  repState = 'up';
 
   $('tbtn').textContent = 'Stop training';
-
+  $('feedback').textContent = 'Training started.';
+  addLog('Training started');
 }
-
 
 function resetReps() {
+  reps = 0;
+  previousAngle = null;
+  repState = 'up';
+  $('reps').textContent = '0';
+}
 
-  rep = {
+function saveProfile() {
+  const name = $('profileName').value.trim();
 
-    n:0,
+  if (!name) {
+    alert('Enter a profile name.');
+    return;
+  }
 
-    state:'top',
-
-    min:1,
-
-    prev:1,
-
-    iss:new Set()
-
+  profile = {
+    name,
+    calibration
   };
 
-  cnt = {};
+  localStorage.setItem('pushupProfile', JSON.stringify(profile));
 
-  $('reps').textContent = 0;
-
-  $('log').innerHTML = '';
-
-  $('fb').innerHTML = '';
-
+  $('profileStatus').textContent = 'Profile saved ✓';
 }
 
+function loadProfile() {
+  const saved = localStorage.getItem('pushupProfile');
 
-function train(m) {
+  if (!saved) return;
 
-  const pe = ['L','R'].map(k =>
+  try {
+    profile = JSON.parse(saved);
 
-    clamp01(
+    $('profileName').value = profile.name || '';
 
-      (m[k].elbow - prof[k].eBot) /
-
-      (prof[k].eTop - prof[k].eBot)
-
-    )
-
-  );
-
-  let p = (pe[0] + pe[1]) / 2;
-
-
-  if(prof.dr > 30) {
-
-    p = (
-
-      p + clamp01((dist - prof.dMin) / prof.dr)
-
-    ) / 2;
-
-  }
-
-
-  const descending = p < rep.prev;
-
-  const issues = [];
-
-
-  for(const k in SIDES) {
-
-    const n = SIDES[k].n;
-
-    if(chk(k+'f', m[k].flare > prof[k].flareMax)) {
-
-      issues.push(
-        `${n} elbow flaring out – tuck it in`
-      );
-
+    if (profile.calibration) {
+      calibration = profile.calibration;
+      $('calStatus').textContent = 'Saved calibration loaded ✓';
     }
-
-    if(chk(k+'w', m[k].wrist > prof[k].wristMax)) {
-
-      issues.push(
-        `${n} wrist twisting – keep hand straight`
-      );
-
-    }
-
+  } catch (error) {
+    console.error('Could not load profile:', error);
   }
-
-
-  if(
-
-    p < 0.9 &&
-
-    chk('sym', Math.abs(pe[0] - pe[1]) > 0.25)
-
-  ) {
-
-    const lag =
-
-      (descending === (pe[0] > pe[1]))
-
-        ? 'Left'
-
-        : 'Right';
-
-    issues.push(
-      `${lag} arm is lagging – move both arms evenly`
-    );
-
-  }
-
-
-  $('fb').innerHTML = issues.length
-
-    ? issues.map(i =>
-        `<div class="bad">${i}</div>`
-      ).join('')
-
-    : '<div class="ok">Form OK</div>';
-
-
-  if(rep.state === 'top' && p < 0.7) {
-
-    rep.state = 'down';
-
-    rep.min = p;
-
-    rep.iss = new Set();
-
-  }
-
-
-  if(rep.state === 'down') {
-
-    rep.min = Math.min(rep.min, p);
-
-    issues.forEach(i => rep.iss.add(i));
-
-
-    if(p > 0.85) {
-
-      rep.state = 'top';
-
-
-      if(rep.min < 0.25) {
-
-        rep.n++;
-
-        $('reps').textContent = rep.n;
-
-        log(
-
-          `Rep ${rep.n}: ` +
-
-          (
-
-            rep.iss.size
-
-              ? [...rep.iss].join('; ')
-
-              : '✓ good form'
-
-          )
-
-        );
-
-      }
-
-      else {
-
-        log('Half rep – go lower (not counted)');
-
-      }
-
-    }
-
-  }
-
-  rep.prev = p;
-
 }
 
+function addLog(message) {
+  const time = new Date().toLocaleTimeString();
+
+  logEntries.unshift(time + ' — ' + message);
+
+  $('log').innerHTML = logEntries
+    .map(entry => '<div>' + escapeHTML(entry) + '</div>')
+    .join('');
+}
+
+function escapeHTML(text) {
+  return String(text).replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[char]);
+}
+
+function clearLog() {
+  logEntries = [];
+  $('log').textContent = 'No training activity yet.';
+}
+
+loadProfile();
 </script>
 
 </body>
