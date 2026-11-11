@@ -108,7 +108,8 @@ input {
 }
 
 #status {
-  font-size: .9rem;
+  display: block;
+  margin-top: 8px;
   overflow-wrap: anywhere;
 }
 </style>
@@ -116,11 +117,17 @@ input {
 
 <body>
 
+<!-- CONNECTION -->
+
 <div class="card">
   <h2>Connection</h2>
   <button onclick="connect()">Connect ESP32</button>
+  <button class="alt" onclick="disconnect()">Disconnect</button>
   <span id="status">Not connected</span>
 </div>
+
+
+<!-- LIVE SENSORS -->
 
 <div class="card">
   <h2>Live sensors (°)</h2>
@@ -150,6 +157,9 @@ input {
   </table>
 </div>
 
+
+<!-- CALIBRATION -->
+
 <div class="card">
   <h2>Calibration (15 s)</h2>
 
@@ -166,6 +176,9 @@ input {
   </div>
 </div>
 
+
+<!-- TRAINING -->
+
 <div class="card">
   <h2>Training</h2>
 
@@ -177,25 +190,143 @@ input {
   <div id="log"></div>
 </div>
 
+
 <script>
 
-// ---------- Bluetooth UUIDs ----------
+// ======================================
+// BLUETOOTH CONFIGURATION
+// ======================================
 
 const SVC = '12345678-1234-1234-1234-1234567890ab';
+
 const CHR = '12345678-1234-1234-1234-1234567890ac';
+
+let bleDevice = null;
+let bleCharacteristic = null;
 
 const $ = id => document.getElementById(id);
 
+
+// ======================================
+// BLUETOOTH CONNECTION
+// ======================================
+
+async function connect() {
+
+  try {
+
+    if (!navigator.bluetooth) {
+      throw new Error("Web Bluetooth is not supported. Use Chrome.");
+    }
+
+    $('status').textContent = 'Searching for PushupCoach...';
+
+    // Search only for the ESP32 name
+
+    bleDevice = await navigator.bluetooth.requestDevice({
+
+      filters: [
+        { name: 'PushupCoach' }
+      ],
+
+      optionalServices: [SVC]
+
+    });
+
+    console.log('Selected:', bleDevice.name);
+
+    $('status').textContent = 'Found: ' + bleDevice.name;
+
+    bleDevice.addEventListener(
+      'gattserverdisconnected',
+      () => {
+
+        $('status').textContent = 'Disconnected';
+
+        bleCharacteristic = null;
+
+        if (mode !== 'cal') {
+          mode = 'idle';
+          $('tbtn').textContent = 'Start training';
+        }
+
+      }
+    );
+
+    $('status').textContent = 'Connecting to ESP32...';
+
+    const server = await bleDevice.gatt.connect();
+
+    $('status').textContent = 'Finding service...';
+
+    const service = await server.getPrimaryService(SVC);
+
+    $('status').textContent = 'Finding sensor characteristic...';
+
+    bleCharacteristic =
+      await service.getCharacteristic(CHR);
+
+    await bleCharacteristic.startNotifications();
+
+    bleCharacteristic.addEventListener(
+      'characteristicvaluechanged',
+      event => onData(event.target.value)
+    );
+
+    $('status').textContent =
+      'Connected to ' + bleDevice.name + ' ✓';
+
+    console.log('Bluetooth connected successfully');
+
+  }
+
+  catch(error) {
+
+    console.error(error);
+
+    $('status').textContent = 'Error: ' + error.message;
+
+  }
+
+}
+
+
+// ======================================
+// DISCONNECT
+// ======================================
+
+function disconnect() {
+
+  if (bleDevice && bleDevice.gatt.connected) {
+    bleDevice.gatt.disconnect();
+  }
+
+  bleCharacteristic = null;
+  mode = 'idle';
+
+  $('status').textContent = 'Disconnected';
+  $('tbtn').textContent = 'Start training';
+
+}
+
+
+// ======================================
+// SENSOR CONFIGURATION
+// ======================================
+
 const wrap = a => {
+
   while(a > 180) a -= 360;
   while(a < -180) a += 360;
+
   return a;
+
 };
 
 const clamp01 = x => Math.max(0, Math.min(1, x));
 
 const mean = (a, f) =>
-  a.reduce((s, x) => s + f(x), 0) / a.length;
+  a.reduce((s,x) => s + f(x), 0) / a.length;
 
 const NAMES = [
   'L upper arm',
@@ -215,131 +346,71 @@ let prof = null;
 let mode = 'idle';
 let cal = null;
 
-let bleDevice = null;
-let bleCharacteristic = null;
 
-
-// ---------- UI skeleton ----------
+// ======================================
+// UI SETUP
+// ======================================
 
 $('sens').innerHTML = NAMES.map((n,i) =>
+
   `<tr>
     <td>${n}</td>
     <td id="s${i}a">–</td>
     <td id="s${i}b">–</td>
   </tr>`
+
 ).join('');
 
+
 $('der').innerHTML = ['elbow','flare','wrist'].map(k =>
+
   `<tr>
     <td>${{
       elbow:'Elbow angle',
       flare:'Arm flare dev.',
       wrist:'Wrist dev.'
     }[k]}</td>
+
     <td id="L${k}">–</td>
     <td id="R${k}">–</td>
   </tr>`
+
 ).join('');
 
-// Load saved calibration
+
+// Load saved profile
 
 try {
+
   prof = JSON.parse(localStorage.getItem('pushupProfile'));
 
   if(prof) {
     $('calMsg').textContent =
       'Saved profile loaded: ' + prof.name;
   }
+
 } catch(e) {
-  console.error('Profile loading error:', e);
+  console.error(e);
 }
 
 
-// ---------- Bluetooth connection ----------
-
-async function connect() {
-
-  try {
-
-    if(!navigator.bluetooth) {
-      throw new Error(
-        'Web Bluetooth unavailable. Open this HTTPS page in Chrome.'
-      );
-    }
-
-    $('status').textContent = 'Searching for ESP32...';
-
-    // Show all nearby BLE devices
-
-    bleDevice = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: [SVC]
-    });
-
-    console.log('Selected device:', bleDevice.name);
-
-    $('status').textContent =
-      'Selected: ' + (bleDevice.name || 'Unknown device');
-
-    bleDevice.addEventListener(
-      'gattserverdisconnected',
-      () => {
-        $('status').textContent = 'Disconnected';
-        bleCharacteristic = null;
-      }
-    );
-
-    $('status').textContent = 'Connecting...';
-
-    const server = await bleDevice.gatt.connect();
-
-    $('status').textContent = 'Finding BLE service...';
-
-    const service = await server.getPrimaryService(SVC);
-
-    $('status').textContent =
-      'Finding sensor characteristic...';
-
-    bleCharacteristic =
-      await service.getCharacteristic(CHR);
-
-    await bleCharacteristic.startNotifications();
-
-    bleCharacteristic.addEventListener(
-      'characteristicvaluechanged',
-      event => onData(event.target.value)
-    );
-
-    $('status').textContent =
-      'Connected to ' + (bleDevice.name || 'ESP32');
-
-    console.log('BLE connection successful');
-
-  } catch(error) {
-
-    console.error('BLE Error:', error);
-
-    $('status').textContent =
-      'Error: ' + error.message;
-  }
-}
-
-
-// ---------- Receive sensor data ----------
+// ======================================
+// RECEIVE BLUETOOTH DATA
+// ======================================
 
 function onData(dv) {
-
-  // Four sensors, 4 bytes each
 
   for(let i = 0; i < 4; i++) {
 
     S[i] = {
-      sag: dv.getInt16(i * 4, true) / 100,
-      lat: dv.getInt16(i * 4 + 2, true) / 100
-    };
-  }
 
-  // Distance in millimeters
+      sag: dv.getInt16(i * 4, true) / 100,
+
+      lat: dv.getInt16(i * 4 + 2, true) / 100
+
+    };
+
+  }
 
   dist = dv.getUint16(16, true);
 
@@ -348,15 +419,23 @@ function onData(dv) {
   render(m);
 
   if(mode === 'cal') {
+
     calStep(m);
+
   }
+
   else if(mode === 'train' && prof) {
+
     train(m);
+
   }
+
 }
 
 
-// ---------- Derive angles ----------
+// ======================================
+// DERIVED ANGLES
+// ======================================
 
 function derive() {
 
@@ -367,12 +446,15 @@ function derive() {
     const {u,w} = SIDES[k];
 
     m[k] = {
+
       elbow: 180 - Math.abs(
         wrap(S[u].sag - S[w].sag)
       ),
 
       lu: S[u].lat,
+
       lw: S[w].lat
+
     };
 
     if(prof) {
@@ -384,20 +466,26 @@ function derive() {
       m[k].wrist = Math.abs(
         wrap(S[w].lat - prof[k].tuckW)
       );
+
     }
+
   }
 
   return m;
+
 }
 
 
-// ---------- Render sensor data ----------
+// ======================================
+// DISPLAY SENSOR DATA
+// ======================================
 
 function render(m) {
 
   S.forEach((s,i) => {
 
     $(`s${i}a`).textContent = s.sag.toFixed(1);
+
     $(`s${i}b`).textContent = s.lat.toFixed(1);
 
   });
@@ -414,35 +502,55 @@ function render(m) {
           : m[k][f].toFixed(0);
 
     }
+
   }
+
 }
 
 
-// ---------- Calibration ----------
+// ======================================
+// CALIBRATION
+// ======================================
 
 const PH = [
+
   '1/3 Push-up motion: go down and up slowly',
+
   '2/3 Open both arms wide sideways',
+
   '3/3 Tuck elbows in, push-up position, hold'
+
 ];
+
 
 function startCal() {
 
   if(!bleCharacteristic) {
+
     alert('Connect ESP32 first!');
+
     return;
+
   }
 
   cal = {
+
     t0: performance.now(),
+
     a: {L:[], R:[]},
+
     d: [],
+
     o: {L:[], R:[]},
+
     t: {L:[], R:[]}
+
   };
 
   mode = 'cal';
+
 }
+
 
 function calStep(m) {
 
@@ -456,17 +564,27 @@ function calStep(m) {
   $('prog').style.width =
     Math.min(100, t / 15 * 100) + '%';
 
+
   for(const k in SIDES) {
 
     if(ph === 0) {
+
       cal.a[k].push(m[k].elbow);
+
     }
+
     else if(ph === 1) {
+
       cal.o[k].push([m[k].lu, m[k].lw]);
+
     }
+
     else {
+
       cal.t[k].push([m[k].lu, m[k].lw]);
+
     }
+
   }
 
   if(ph === 0) {
@@ -476,56 +594,80 @@ function calStep(m) {
   if(t >= 15) {
     finishCal();
   }
+
 }
+
 
 function finishCal() {
 
   mode = 'idle';
 
   const p = {
+
     name: $('pname').value || 'me',
+
     dMin: Math.min(...cal.d),
+
     dMax: Math.max(...cal.d)
+
   };
 
   p.dr = p.dMax - p.dMin;
+
 
   for(const k in SIDES) {
 
     const e = cal.a[k];
 
     const q = {
+
       eBot: Math.min(...e),
+
       eTop: Math.max(...e)
+
     };
 
     q.tuckU = mean(cal.t[k], x => x[0]);
+
     q.tuckW = mean(cal.t[k], x => x[1]);
 
     q.openU = mean(cal.o[k], x => x[0]);
+
     q.openW = mean(cal.o[k], x => x[1]);
 
+
     q.flareMax = Math.max(
+
       8,
+
       Math.abs(wrap(q.openU - q.tuckU)) * 0.5
+
     );
 
     q.wristMax = Math.max(
+
       8,
+
       Math.abs(wrap(q.openW - q.tuckW)) * 0.5
+
     );
 
     p[k] = q;
 
+
     if(q.eTop - q.eBot < 25) {
 
       $('calMsg').textContent =
+
         SIDES[k].n +
         ' arm: not enough movement in phase 1 – redo calibration';
 
       return;
+
     }
+
   }
+
 
   prof = p;
 
@@ -538,32 +680,45 @@ function finishCal() {
     'Calibration done for ' + p.name + ' ✓';
 
   $('prog').style.width = '100%';
+
 }
 
 
-// ---------- Training / form check ----------
+// ======================================
+// TRAINING
+// ======================================
 
 let rep = {
+
   n:0,
+
   state:'top',
+
   min:1,
+
   prev:1,
+
   iss:new Set()
+
 };
 
 let cnt = {};
+
 
 const chk = (key,c) => {
 
   cnt[key] = c ? (cnt[key] || 0) + 1 : 0;
 
   return cnt[key] >= 5;
+
 };
+
 
 const log = s => {
 
   $('log').innerHTML =
     `<div>${s}</div>` + $('log').innerHTML;
+
 };
 
 
@@ -576,39 +731,56 @@ function toggleTrain() {
     $('tbtn').textContent = 'Start training';
 
     return;
+
   }
 
   if(!bleCharacteristic) {
+
     alert('Connect ESP32 first');
+
     return;
+
   }
 
   if(!prof) {
+
     alert('Calibrate first');
+
     return;
+
   }
 
   mode = 'train';
 
   $('tbtn').textContent = 'Stop training';
+
 }
 
 
 function resetReps() {
 
   rep = {
+
     n:0,
+
     state:'top',
+
     min:1,
+
     prev:1,
+
     iss:new Set()
+
   };
 
   cnt = {};
 
   $('reps').textContent = 0;
+
   $('log').innerHTML = '';
+
   $('fb').innerHTML = '';
+
 }
 
 
@@ -617,24 +789,33 @@ function train(m) {
   const pe = ['L','R'].map(k =>
 
     clamp01(
+
       (m[k].elbow - prof[k].eBot) /
+
       (prof[k].eTop - prof[k].eBot)
+
     )
 
   );
 
   let p = (pe[0] + pe[1]) / 2;
 
+
   if(prof.dr > 30) {
 
     p = (
+
       p + clamp01((dist - prof.dMin) / prof.dr)
+
     ) / 2;
+
   }
+
 
   const descending = p < rep.prev;
 
   const issues = [];
+
 
   for(const k in SIDES) {
 
@@ -645,6 +826,7 @@ function train(m) {
       issues.push(
         `${n} elbow flaring out – tuck it in`
       );
+
     }
 
     if(chk(k+'w', m[k].wrist > prof[k].wristMax)) {
@@ -652,35 +834,54 @@ function train(m) {
       issues.push(
         `${n} wrist twisting – keep hand straight`
       );
+
     }
+
   }
 
+
   if(
+
     p < 0.9 &&
+
     chk('sym', Math.abs(pe[0] - pe[1]) > 0.25)
+
   ) {
 
     const lag =
+
       (descending === (pe[0] > pe[1]))
+
         ? 'Left'
+
         : 'Right';
 
     issues.push(
       `${lag} arm is lagging – move both arms evenly`
     );
+
   }
 
+
   $('fb').innerHTML = issues.length
-    ? issues.map(i => `<div class="bad">${i}</div>`).join('')
+
+    ? issues.map(i =>
+        `<div class="bad">${i}</div>`
+      ).join('')
+
     : '<div class="ok">Form OK</div>';
 
 
   if(rep.state === 'top' && p < 0.7) {
 
     rep.state = 'down';
+
     rep.min = p;
+
     rep.iss = new Set();
+
   }
+
 
   if(rep.state === 'down') {
 
@@ -688,9 +889,11 @@ function train(m) {
 
     issues.forEach(i => rep.iss.add(i));
 
+
     if(p > 0.85) {
 
       rep.state = 'top';
+
 
       if(rep.min < 0.25) {
 
@@ -699,22 +902,35 @@ function train(m) {
         $('reps').textContent = rep.n;
 
         log(
+
           `Rep ${rep.n}: ` +
+
           (
+
             rep.iss.size
+
               ? [...rep.iss].join('; ')
+
               : '✓ good form'
+
           )
+
         );
 
-      } else {
+      }
+
+      else {
 
         log('Half rep – go lower (not counted)');
+
       }
+
     }
+
   }
 
   rep.prev = p;
+
 }
 
 </script>
