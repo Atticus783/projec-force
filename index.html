@@ -1,69 +1,190 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sensor test</title>
+<title>Push-up Coach</title>
 <style>
 :root{color-scheme:light dark;font-family:system-ui,sans-serif}
 body{margin:0;padding:12px;max-width:560px;margin:auto}
 .card{border:1px solid #8884;border-radius:12px;padding:12px;margin:10px 0}
 h2{margin:0 0 8px;font-size:1rem}
-table{width:100%;border-collapse:collapse;font-size:.95rem}
-td,th{padding:6px;text-align:right;border-bottom:1px solid #8883}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+td,th{padding:4px;text-align:right;border-bottom:1px solid #8883}
 td:first-child,th:first-child{text-align:left}
-button{padding:12px 16px;border-radius:8px;border:0;background:#2563eb;color:#fff;font-size:1rem}
-.ok{color:#16a34a;font-weight:700}.bad{color:#dc2626;font-weight:700}
+button{padding:10px 14px;border-radius:8px;border:0;background:#2563eb;color:#fff;font-size:1rem;margin:4px 4px 4px 0}
+button.alt{background:#6b7280}
+textarea{width:100%;box-sizing:border-box;font-family:monospace}
+.bar{height:8px;background:#8883;border-radius:4px;overflow:hidden;margin-top:6px}
+#prog{height:100%;width:0;background:#2563eb}
+.light{border-radius:14px;padding:22px 12px;text-align:center;font-size:1.3rem;font-weight:700;color:#fff;margin:8px 0}
+.idle{background:#6b7280}.ok{background:#16a34a}.bad{background:#dc2626}
+#reps{font-size:2.2rem;font-weight:700}
+#log{font-size:.85rem;max-height:140px;overflow:auto}
 </style></head><body>
 
-<div class="card"><h2>Connection</h2>
-<button onclick="connect()">Connect ESP32</button> <span id="status">Not connected</span>
-<p>Packets per second: <b id="hz">0</b> (should be about 20)</p></div>
+<div class="card"><h2>1 · Connection</h2>
+<button onclick="connect()">Connect ESP32</button> <span id="status">Not connected</span></div>
 
-<div class="card"><h2>Sensors</h2>
-<table><thead><tr><th>Sensor</th><th>Sagittal °</th><th>Lateral °</th><th>Status</th></tr></thead>
-<tbody id="sens"></tbody></table>
-<p style="font-size:.85rem">"NO DATA" = the sensor returned nothing (exactly 180 / 180). Check its wiring and power.</p></div>
+<div class="card"><h2>2 · Perfect push-up reference</h2>
+<div id="perfStatus">Not loaded (record it on record_perfect.html)</div>
+<table><tr><th>Raw elbow (°)</th><th>Bottom</th><th>Top</th></tr>
+<tr><td>Left</td><td id="pLb">–</td><td id="pLt">–</td></tr>
+<tr><td>Right</td><td id="pRb">–</td><td id="pRt">–</td></tr></table>
+<textarea id="pasteBox" rows="2" placeholder="Or paste the values copied from the recorder page"></textarea>
+<button class="alt" onclick="pastePerfect()">Load pasted values</button></div>
 
-<div class="card"><h2>Elbow and chest</h2>
-<table>
-<tr><th></th><th>Left</th><th>Right</th></tr>
-<tr><td>Elbow angle (°)</td><td id="eL">–</td><td id="eR">–</td></tr>
-</table>
-<p>Chest distance: <b id="dist">–</b> <span id="dstat"></span></p></div>
+<div class="card"><h2>3 · Standing calibration (15 s)</h2>
+<div>0–5 s: arms straight out in front, elbows fully straight.<br>
+5–10 s: elbows bent to 90°, tucked in, forearms pointing forward.<br>
+10–15 s: move slowly between the two.</div>
+<button onclick="startCal()">Start calibration</button>
+<div id="calMsg">Not calibrated</div>
+<div class="bar"><div id="prog"></div></div></div>
+
+<div class="card"><h2>4 · Training</h2>
+<div id="light" class="light idle">Press Start training</div>
+<div>Good reps: <span id="reps">0</span> &nbsp; Bad reps: <b id="bad">0</b></div>
+<button id="tbtn" onclick="toggleTrain()">Start training</button>
+<button class="alt" onclick="resetReps()">Reset</button>
+<div id="log"></div></div>
+
+<div class="card"><h2>Live sensors</h2>
+<table><thead><tr><th>Sensor</th><th>Sagittal °</th><th>Lateral °</th></tr></thead><tbody id="sens"></tbody></table>
+<table><tr><th>Elbow (°)</th><th>Left</th><th>Right</th></tr>
+<tr><td>Raw</td><td id="rawL">–</td><td id="rawR">–</td></tr>
+<tr><td>Corrected</td><td id="corL">–</td><td id="corR">–</td></tr></table></div>
 
 <script>
+// ===== Settings you can change =====
+const TOL=10;   // degrees of allowed error at the top and bottom of a rep
+const BAL=15;   // max allowed difference between left and right elbow
+// ===================================
 const SVC='12345678-1234-1234-1234-1234567890ab', CHR='12345678-1234-1234-1234-1234567890ac';
 const $=id=>document.getElementById(id);
 const wrap=a=>{while(a>180)a-=360;while(a<-180)a+=360;return a};
-const NAMES=['L upper arm (ch 2)','L wrist (ch 3)','R upper arm (ch 4)','R wrist (ch 5)'];
-$('sens').innerHTML=NAMES.map((n,i)=>`<tr><td>${n}</td><td id="s${i}">–</td><td id="l${i}">–</td><td id="t${i}">–</td></tr>`).join('');
-let count=0;
-setInterval(()=>{$('hz').textContent=count;count=0},1000);
+const SIDE={L:{u:0,w:1,n:'LEFT'},R:{u:2,w:3,n:'RIGHT'}};
+const NAMES=['L upper arm','L wrist','R upper arm','R wrist'];
+let S=[{sag:0,lat:0},{sag:0,lat:0},{sag:0,lat:0},{sag:0,lat:0}];
+let connected=false, mode='idle', stand=null, perfect=null, cal=null;
 
+$('sens').innerHTML=NAMES.map((n,i)=>`<tr><td>${n}</td><td id="s${i}">–</td><td id="l${i}">–</td></tr>`).join('');
+
+// ---------- helpers ----------
+const rawE=k=>{const {u,w}=SIDE[k];return 180-Math.abs(wrap(S[u].sag-S[w].sag))};
+// standing calibration maps your "straight" reading to 180° and "bent" reading to 90°
+const fix=(k,r)=>stand?90+(r-stand[k].bent)*90/(stand[k].straight-stand[k].bent):r;
+
+// ---------- Bluetooth ----------
 async function connect(){
   try{
     const dev=await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}]});
-    dev.addEventListener('gattserverdisconnected',()=>$('status').textContent='Disconnected');
+    dev.addEventListener('gattserverdisconnected',()=>{connected=false;mode='idle';$('status').textContent='Disconnected'});
     const srv=await dev.gatt.connect();
     const ch=await (await srv.getPrimaryService(SVC)).getCharacteristic(CHR);
     await ch.startNotifications();
     ch.addEventListener('characteristicvaluechanged',e=>onData(e.target.value));
-    $('status').textContent='Connected ✓';
+    connected=true;$('status').textContent='Connected ✓';
   }catch(e){$('status').textContent='Error: '+e.message}
 }
-
 function onData(dv){
-  count++;
-  const sag=[],lat=[];
-  for(let i=0;i<4;i++){
-    sag[i]=dv.getInt16(i*4,true)/100;lat[i]=dv.getInt16(i*4+2,true)/100;
-    $('s'+i).textContent=sag[i].toFixed(1);$('l'+i).textContent=lat[i].toFixed(1);
-    const dead=Math.abs(sag[i])>=179.9&&Math.abs(lat[i])>=179.9;
-    $('t'+i).textContent=dead?'NO DATA':'OK';$('t'+i).className=dead?'bad':'ok';
-  }
-  $('eL').textContent=(180-Math.abs(wrap(sag[0]-sag[1]))).toFixed(0);
-  $('eR').textContent=(180-Math.abs(wrap(sag[2]-sag[3]))).toFixed(0);
-  const d=dv.getUint16(16,true);
-  $('dist').textContent=d+' mm';
-  $('dstat').textContent=d===0?'(no echo yet)':'';
+  for(let i=0;i<4;i++){S[i]={sag:dv.getInt16(i*4,true)/100,lat:dv.getInt16(i*4+2,true)/100};
+    $('s'+i).textContent=S[i].sag.toFixed(1);$('l'+i).textContent=S[i].lat.toFixed(1)}
+  for(const k in SIDE){const r=rawE(k);$('raw'+k).textContent=r.toFixed(0);$('cor'+k).textContent=fix(k,r).toFixed(0)}
+  if(mode==='cal')calStep(); else if(mode==='train')train();
 }
+
+// ---------- Perfect push-up reference ----------
+function setPerfect(p){
+  perfect=p;
+  for(const k of['L','R']){$('p'+k+'b').textContent=p[k].bot;$('p'+k+'t').textContent=p[k].top}
+  $('perfStatus').textContent='Reference loaded ✓';
+}
+function pastePerfect(){
+  try{const p=JSON.parse($('pasteBox').value);if(!p.L||!p.R)throw 0;setPerfect(p);localStorage.setItem('pushupPerfect',JSON.stringify(p))}
+  catch(e){alert('Could not read the pasted values')}
+}
+
+// ---------- Standing calibration ----------
+function startCal(){
+  if(!connected){alert('Connect first');return}
+  if(mode==='train')toggleTrain();
+  cal={t0:performance.now(),a:{L:[],R:[]},b:{L:[],R:[]},m:{L:[],R:[]}};mode='cal';
+}
+function calStep(){
+  const t=(performance.now()-cal.t0)/1000, ph=Math.min(2,Math.floor(t/5));
+  $('calMsg').textContent=['Arms STRAIGHT out in front','Elbows BENT 90°, tucked in','Move slowly between the two'][ph]+' ('+Math.max(0,Math.ceil(15-t))+'s)';
+  $('prog').style.width=Math.min(100,t/15*100)+'%';
+  for(const k in SIDE)(ph===0?cal.a:ph===1?cal.b:cal.m)[k].push(rawE(k));
+  if(t>=15)finishCal();
+}
+function finishCal(){
+  mode='idle';
+  const avg=a=>a.reduce((s,x)=>s+x,0)/a.length, st={};
+  for(const k in SIDE){
+    const a=cal.a[k].slice(20), b=cal.b[k].slice(20), m=cal.m[k];   // skip first 1 s of each hold
+    if(a.length<20||b.length<20){$('calMsg').textContent='Not enough data – retry';return}
+    st[k]={straight:avg(a),bent:avg(b)};
+    if(st[k].straight-st[k].bent<30){$('calMsg').textContent=SIDE[k].n+' arm: straight and bent readings are too close – retry';return}
+    if(Math.max(...m)-Math.min(...m)<30){$('calMsg').textContent=SIDE[k].n+' arm did not move in the last 5 s – retry';return}
+  }
+  stand=st;localStorage.setItem('pushupStand',JSON.stringify(st));
+  $('calMsg').textContent='Calibration done ✓';$('prog').style.width='100%';
+}
+
+// ---------- Training ----------
+let rep, cnt={}, flash={msgs:[],until:0}, good=0, bad=0;
+const resetRep=()=>{rep={state:'top',prev:180,min:{L:180,R:180}}};
+resetRep();
+const chk=(key,c)=>{cnt[key]=c?(cnt[key]||0)+1:0;return cnt[key]>=5};   // must hold ~250 ms
+const log=s=>{$('log').innerHTML=`<div>${s}</div>`+$('log').innerHTML};
+
+function toggleTrain(){
+  if(mode==='train'){mode='idle';$('tbtn').textContent='Start training';setLight([], 'Training stopped');return}
+  if(!connected){alert('Connect first');return}
+  if(!perfect){alert('Load the perfect push-up reference first');return}
+  mode='train';resetRep();$('tbtn').textContent='Stop training';
+  if(!stand)log('No standing calibration – using raw angles');
+}
+function resetReps(){good=0;bad=0;$('reps').textContent=0;$('bad').textContent=0;$('log').innerHTML='';resetRep()}
+
+function setLight(msgs,idleText){
+  const el=$('light');
+  if(idleText){el.className='light idle';el.textContent=idleText;return}
+  if(msgs.length){el.className='light bad';el.innerHTML=msgs.join('<br>')}
+  else{el.className='light ok';el.textContent='Good form ✓'}
+}
+
+function train(){
+  const e={},T={};
+  for(const k in SIDE){e[k]=fix(k,rawE(k));T[k]={bot:fix(k,perfect[k].bot),top:fix(k,perfect[k].top)}}
+  const avg=(e.L+e.R)/2, topAvg=(T.L.top+T.R.top)/2;
+  const desc=avg<rep.prev, live=[];
+
+  // balance: only while moving between top and bottom
+  if(chk('bal',avg<topAvg-TOL&&Math.abs(e.L-e.R)>BAL)){
+    const lagIsLeft=desc?(e.L>e.R):(e.L<e.R);          // the arm that is behind the other one
+    const n=lagIsLeft?'LEFT':'RIGHT';
+    live.push(desc?`Bend your ${n} arm more to match the other`:`Straighten your ${n} arm to match the other`);
+  }
+
+  // rep state machine
+  if(rep.state==='top'&&avg<topAvg-2*TOL){rep.state='down';rep.min={L:e.L,R:e.R}}
+  if(rep.state==='down'){
+    for(const k in SIDE)rep.min[k]=Math.min(rep.min[k],e[k]);
+    if(avg>=topAvg-TOL){                                // back at the top: judge the rep
+      rep.state='top';const msgs=[];
+      for(const k in SIDE){
+        if(rep.min[k]>T[k].bot+TOL)msgs.push(`Bend your ${SIDE[k].n} arm more – go lower`);
+        if(e[k]<T[k].top-TOL)msgs.push(`Straighten your ${SIDE[k].n} arm fully`);
+      }
+      if(msgs.length){bad++;$('bad').textContent=bad;flash={msgs,until:Date.now()+2500};log('Bad rep: '+msgs.join('; '))}
+      else{good++;$('reps').textContent=good;flash={msgs:[],until:Date.now()+800};log('Rep '+good+' ✓')}
+    }
+  }
+  rep.prev=avg;
+  setLight(Date.now()<flash.until?flash.msgs.concat(live):live);
+}
+
+// ---------- load saved data ----------
+try{const p=JSON.parse(localStorage.getItem('pushupPerfect'));if(p&&p.L&&p.R)setPerfect(p)}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('pushupStand'));if(s&&s.L&&s.R){stand=s;$('calMsg').textContent='Saved calibration loaded ✓'}}catch(e){}
 </script></body></html>
