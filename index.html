@@ -1,61 +1,91 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Push-up Coach</title>
+<title>X Force</title>
 <style>
-:root{color-scheme:dark;--cyan:#00f0ff;--pink:#ff2bd6;--yellow:#fcee0a;--green:#00ff9c;--red:#ff2a55;--panel:rgba(10,8,28,.82)}
-body{margin:0;padding:12px;max-width:560px;margin:auto;min-height:100vh;color:#d6f9ff;
+:root{color-scheme:dark;--lime:#7dff2a;--lime2:#b6ff5a;--red:#ff3b30;--metal:#2b2f2c;--metal2:#3d423e}
+body{margin:0;padding:12px 18px 12px 12px;max-width:560px;margin:auto;min-height:100vh;color:#e6ffe0;
   font-family:ui-monospace,"Cascadia Mono","Courier New",monospace;letter-spacing:.02em;
   background:
-    linear-gradient(rgba(0,240,255,.07) 1px,transparent 1px) 0 0/32px 32px,
-    linear-gradient(90deg,rgba(0,240,255,.07) 1px,transparent 1px) 0 0/32px 32px,
-    radial-gradient(ellipse at 15% 0%,rgba(255,43,214,.28),transparent 55%),
-    radial-gradient(ellipse at 90% 100%,rgba(0,240,255,.24),transparent 55%),
-    #07060f;
+    linear-gradient(rgba(125,255,42,.05) 1px,transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg,rgba(125,255,42,.05) 1px,transparent 1px) 0 0/28px 28px,
+    radial-gradient(ellipse at 50% -10%,rgba(125,255,42,.22),transparent 55%),
+    radial-gradient(ellipse at 100% 100%,rgba(60,120,255,.12),transparent 50%),
+    #070907;
   background-attachment:fixed}
 body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px)}
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.10) 0 1px,transparent 1px 3px)}
+body::after{content:"";position:fixed;right:0;top:0;bottom:0;width:9px;pointer-events:none;z-index:49;
+  background:repeating-linear-gradient(135deg,rgba(125,255,42,.6) 0 3px,transparent 3px 10px)}
 
-.card{background:var(--panel);border:1px solid var(--cyan);border-left:4px solid var(--pink);
-  padding:12px;margin:12px 0;
-  box-shadow:0 0 10px rgba(0,240,255,.35),inset 0 0 18px rgba(0,240,255,.08)}
-h2{margin:0 0 8px;font-size:1rem;color:var(--cyan);text-transform:uppercase;letter-spacing:.12em;
-  text-shadow:0 0 8px var(--cyan)}
-h2::before{content:"// ";color:var(--pink)}
+/* title block */
+.hero{display:flex;align-items:center;gap:12px;margin:6px 0 4px;padding:10px 12px;
+  border:1px solid var(--lime);border-radius:6px 22px 6px 22px;
+  background:linear-gradient(180deg,#171d17,#0b0f0b);box-shadow:0 0 14px rgba(125,255,42,.35)}
+.badge{font:700 2rem Impact,"Arial Black",sans-serif;color:var(--lime);border:2px solid var(--lime);
+  padding:0 10px;border-radius:6px;box-shadow:inset 0 0 10px rgba(125,255,42,.4);text-shadow:0 0 8px var(--lime)}
+.hero h1{margin:0;font:italic 900 1.9rem Impact,"Arial Black",sans-serif;letter-spacing:.12em;color:#fff;
+  text-shadow:0 0 12px var(--lime)}
+.sub{font-size:.62rem;color:var(--lime);letter-spacing:.15em;margin-top:2px}
+.slash{margin-left:auto;width:54px;height:22px;
+  background:repeating-linear-gradient(120deg,var(--lime) 0 3px,transparent 3px 9px)}
+
+/* panels with corner bolts */
+.card{position:relative;margin:12px 0;padding:14px 12px 12px;
+  border:1px solid var(--lime);border-radius:6px 18px 6px 18px;
+  background:
+    radial-gradient(circle at 9px 9px,#000 0 2.5px,#6c746c 3px 4px,transparent 4.5px),
+    radial-gradient(circle at calc(100% - 9px) 9px,#000 0 2.5px,#6c746c 3px 4px,transparent 4.5px),
+    radial-gradient(circle at 9px calc(100% - 9px),#000 0 2.5px,#6c746c 3px 4px,transparent 4.5px),
+    radial-gradient(circle at calc(100% - 9px) calc(100% - 9px),#000 0 2.5px,#6c746c 3px 4px,transparent 4.5px),
+    linear-gradient(180deg,#121712,#0a0d0a);
+  box-shadow:0 0 10px rgba(125,255,42,.3),inset 0 0 16px rgba(125,255,42,.06)}
+h2{display:inline-block;margin:0 0 10px;padding:3px 10px;font-size:.85rem;color:var(--lime);
+  text-transform:uppercase;letter-spacing:.12em;border:1px solid #5a625a;border-radius:3px;
+  background:linear-gradient(var(--metal2),var(--metal));text-shadow:0 0 6px var(--lime)}
 
 table{width:100%;border-collapse:collapse;font-size:.9rem;margin-bottom:6px}
-td,th{padding:5px;text-align:right;border-bottom:1px solid rgba(0,240,255,.2)}
+td,th{padding:5px;text-align:right;border-bottom:1px solid rgba(125,255,42,.22)}
 td:first-child,th:first-child{text-align:left}
-th{color:var(--pink);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em}
+th{color:var(--lime);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
 
-button{background:transparent;color:var(--cyan);border:1px solid var(--cyan);border-radius:0;
-  font-family:inherit;font-size:.95rem;text-transform:uppercase;letter-spacing:.08em;
-  padding:10px 14px;margin:4px 4px 4px 0;cursor:pointer;box-shadow:0 0 8px rgba(0,240,255,.5)}
-button:active{background:var(--cyan);color:#000}
-button.alt{color:var(--pink);border-color:var(--pink);box-shadow:0 0 8px rgba(255,43,214,.5)}
-button.alt:active{background:var(--pink);color:#000}
-input[type=range]{accent-color:var(--pink)}
+button{background:rgba(125,255,42,.12);color:var(--lime);border:1px solid var(--lime);border-radius:3px;
+  font-family:inherit;font-size:.9rem;text-transform:uppercase;letter-spacing:.08em;
+  padding:10px 14px;margin:4px 4px 4px 0;cursor:pointer;box-shadow:0 0 8px rgba(125,255,42,.45)}
+button:active{background:var(--lime);color:#000}
+button.alt{background:linear-gradient(var(--metal2),var(--metal));color:#cfd6cf;border-color:#6a726a;box-shadow:none}
+button.alt:active{background:#cfd6cf;color:#000}
+input[type=range]{accent-color:var(--lime)}
 
-.bar{height:8px;background:rgba(0,240,255,.12);border:1px solid rgba(0,240,255,.4);margin-top:6px;overflow:hidden}
-#prog{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--pink));box-shadow:0 0 10px var(--pink)}
+/* segmented bar like the HP / SP bars */
+.bar{height:12px;background:#0a0d0a;border:1px solid var(--lime);margin-top:6px;overflow:hidden}
+#prog{height:100%;width:0;background:repeating-linear-gradient(90deg,var(--lime) 0 8px,transparent 8px 11px);
+  box-shadow:0 0 10px var(--lime)}
 
-.light{padding:22px 12px;text-align:center;font-size:1.3rem;font-weight:700;margin:8px 0;
+/* status light */
+.light{padding:22px 12px;text-align:center;font-size:1.3rem;font-weight:700;margin:8px 0;border-radius:4px 14px 4px 14px;
   text-transform:uppercase;letter-spacing:.06em}
-.idle{background:#14122b;color:#8b8bb0;border:1px solid #3a3670}
-.ok{background:rgba(0,255,156,.12);color:var(--green);border:1px solid var(--green);
-  box-shadow:0 0 18px rgba(0,255,156,.55);text-shadow:0 0 8px var(--green)}
-.bad{background:rgba(255,42,85,.14);color:var(--red);border:1px solid var(--red);
-  box-shadow:0 0 18px rgba(255,42,85,.6);text-shadow:0 0 8px var(--red);animation:pulse 1s infinite}
-@keyframes pulse{50%{box-shadow:0 0 32px rgba(255,42,85,.95)}}
+.idle{background:linear-gradient(var(--metal2),var(--metal));color:#9aa39a;border:1px solid #5a625a}
+.ok{background:rgba(125,255,42,.14);color:var(--lime);border:1px solid var(--lime);
+  box-shadow:0 0 20px rgba(125,255,42,.6);text-shadow:0 0 8px var(--lime)}
+.bad{background:rgba(255,59,48,.14);color:var(--red);border:1px solid var(--red);
+  box-shadow:0 0 20px rgba(255,59,48,.6);text-shadow:0 0 8px var(--red);animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 34px rgba(255,59,48,.95)}}
 
-.okt{color:var(--green);font-weight:700;text-shadow:0 0 6px var(--green)}
+.okt{color:var(--lime);font-weight:700;text-shadow:0 0 6px var(--lime)}
 .badt{color:var(--red);font-weight:700;text-shadow:0 0 6px var(--red)}
-#repsGood{font-size:2.2rem;font-weight:700;color:var(--yellow);text-shadow:0 0 12px var(--yellow)}
-#recMsg,#calMsg{font-weight:700;margin:6px 0;color:var(--yellow)}
-#logBox{font-size:.85rem;max-height:140px;overflow:auto;color:#9ff}
+#repsGood{font:700 2.4rem Impact,"Arial Black",sans-serif;color:var(--lime);text-shadow:0 0 12px var(--lime)}
+#recMsg,#calMsg{font-weight:700;margin:6px 0;color:var(--lime2)}
+#logBox{font-size:.85rem;max-height:140px;overflow:auto;color:#b9e8a8}
 </style></head><body>
 
-<div class="card"><h2>1 · Connection</h2>
+<div class="hero">
+  <div class="badge">01</div>
+  <div><h1>X FORCE</h1><div class="sub">PUSH-UP POSTURE SYSTEM · VER 1.0</div></div>
+  <div class="slash"></div>
+</div>
+
+<div class="card"><h2>1 · Connection</h2><br>
 <button onclick="connect()">Connect ESP32</button> <span id="conn">Not connected</span>
 <p>Packets per second: <b id="hz">0</b> <span id="err" class="badt"></span></p></div>
 
