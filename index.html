@@ -3,23 +3,56 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Push-up Coach</title>
 <style>
-:root{color-scheme:light dark;font-family:system-ui,sans-serif}
-body{margin:0;padding:12px;max-width:560px;margin:auto}
-.card{border:1px solid #8884;border-radius:12px;padding:12px;margin:10px 0}
-h2{margin:0 0 8px;font-size:1rem}
+:root{color-scheme:dark;--cyan:#00f0ff;--pink:#ff2bd6;--yellow:#fcee0a;--green:#00ff9c;--red:#ff2a55;--panel:rgba(10,8,28,.82)}
+body{margin:0;padding:12px;max-width:560px;margin:auto;min-height:100vh;color:#d6f9ff;
+  font-family:ui-monospace,"Cascadia Mono","Courier New",monospace;letter-spacing:.02em;
+  background:
+    linear-gradient(rgba(0,240,255,.07) 1px,transparent 1px) 0 0/32px 32px,
+    linear-gradient(90deg,rgba(0,240,255,.07) 1px,transparent 1px) 0 0/32px 32px,
+    radial-gradient(ellipse at 15% 0%,rgba(255,43,214,.28),transparent 55%),
+    radial-gradient(ellipse at 90% 100%,rgba(0,240,255,.24),transparent 55%),
+    #07060f;
+  background-attachment:fixed}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px)}
+
+.card{background:var(--panel);border:1px solid var(--cyan);border-left:4px solid var(--pink);
+  padding:12px;margin:12px 0;
+  box-shadow:0 0 10px rgba(0,240,255,.35),inset 0 0 18px rgba(0,240,255,.08)}
+h2{margin:0 0 8px;font-size:1rem;color:var(--cyan);text-transform:uppercase;letter-spacing:.12em;
+  text-shadow:0 0 8px var(--cyan)}
+h2::before{content:"// ";color:var(--pink)}
+
 table{width:100%;border-collapse:collapse;font-size:.9rem;margin-bottom:6px}
-td,th{padding:5px;text-align:right;border-bottom:1px solid #8883}
+td,th{padding:5px;text-align:right;border-bottom:1px solid rgba(0,240,255,.2)}
 td:first-child,th:first-child{text-align:left}
-button{padding:10px 14px;border-radius:8px;border:0;background:#2563eb;color:#fff;font-size:1rem;margin:4px 4px 4px 0}
-button.alt{background:#6b7280}
-.bar{height:8px;background:#8883;border-radius:4px;overflow:hidden;margin-top:6px}
-#prog{height:100%;width:0;background:#2563eb}
-.light{border-radius:14px;padding:22px 12px;text-align:center;font-size:1.3rem;font-weight:700;color:#fff;margin:8px 0}
-.idle{background:#6b7280}.ok{background:#16a34a}.bad{background:#dc2626}
-.okt{color:#16a34a;font-weight:700}.badt{color:#dc2626;font-weight:700}
-#repsGood{font-size:2.2rem;font-weight:700}
-#recMsg,#calMsg{font-weight:700;margin:6px 0}
-#logBox{font-size:.85rem;max-height:140px;overflow:auto}
+th{color:var(--pink);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em}
+
+button{background:transparent;color:var(--cyan);border:1px solid var(--cyan);border-radius:0;
+  font-family:inherit;font-size:.95rem;text-transform:uppercase;letter-spacing:.08em;
+  padding:10px 14px;margin:4px 4px 4px 0;cursor:pointer;box-shadow:0 0 8px rgba(0,240,255,.5)}
+button:active{background:var(--cyan);color:#000}
+button.alt{color:var(--pink);border-color:var(--pink);box-shadow:0 0 8px rgba(255,43,214,.5)}
+button.alt:active{background:var(--pink);color:#000}
+input[type=range]{accent-color:var(--pink)}
+
+.bar{height:8px;background:rgba(0,240,255,.12);border:1px solid rgba(0,240,255,.4);margin-top:6px;overflow:hidden}
+#prog{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--pink));box-shadow:0 0 10px var(--pink)}
+
+.light{padding:22px 12px;text-align:center;font-size:1.3rem;font-weight:700;margin:8px 0;
+  text-transform:uppercase;letter-spacing:.06em}
+.idle{background:#14122b;color:#8b8bb0;border:1px solid #3a3670}
+.ok{background:rgba(0,255,156,.12);color:var(--green);border:1px solid var(--green);
+  box-shadow:0 0 18px rgba(0,255,156,.55);text-shadow:0 0 8px var(--green)}
+.bad{background:rgba(255,42,85,.14);color:var(--red);border:1px solid var(--red);
+  box-shadow:0 0 18px rgba(255,42,85,.6);text-shadow:0 0 8px var(--red);animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 32px rgba(255,42,85,.95)}}
+
+.okt{color:var(--green);font-weight:700;text-shadow:0 0 6px var(--green)}
+.badt{color:var(--red);font-weight:700;text-shadow:0 0 6px var(--red)}
+#repsGood{font-size:2.2rem;font-weight:700;color:var(--yellow);text-shadow:0 0 12px var(--yellow)}
+#recMsg,#calMsg{font-weight:700;margin:6px 0;color:var(--yellow)}
+#logBox{font-size:.85rem;max-height:140px;overflow:auto;color:#9ff}
 </style></head><body>
 
 <div class="card"><h2>1 · Connection</h2>
@@ -70,8 +103,9 @@ const BAL=20;    // max allowed difference between left and right elbow
 const SVC='12345678-1234-1234-1234-1234567890ab', CHR='12345678-1234-1234-1234-1234567890ac';
 const $=id=>document.getElementById(id);
 const wrap=a=>{while(a>180)a-=360;while(a<-180)a+=360;return a};
-const SIDE={L:{u:0,w:1,n:'LEFT'},R:{u:2,w:3,n:'RIGHT'}};
-const NAMES=['L upper arm (ch 2)','L wrist (ch 3)','R upper arm (ch 4)','R wrist (ch 5)'];
+// Left arm = channels 4,5 (sensors 2,3); Right arm = channels 2,3 (sensors 0,1)
+const SIDE={L:{u:2,w:3,n:'LEFT'},R:{u:0,w:1,n:'RIGHT'}};
+const NAMES=['R upper arm (ch 2)','R wrist (ch 3)','L upper arm (ch 4)','L wrist (ch 5)'];
 const pc=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(p*s.length))]};
 
 let S=[{sag:0,lat:0},{sag:0,lat:0},{sag:0,lat:0},{sag:0,lat:0}];
