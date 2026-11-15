@@ -1,358 +1,69 @@
-
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>XForce Sensor Monitor</title>
-
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sensor test</title>
 <style>
-* {
-  box-sizing: border-box;
-}
+:root{color-scheme:light dark;font-family:system-ui,sans-serif}
+body{margin:0;padding:12px;max-width:560px;margin:auto}
+.card{border:1px solid #8884;border-radius:12px;padding:12px;margin:10px 0}
+h2{margin:0 0 8px;font-size:1rem}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+td,th{padding:6px;text-align:right;border-bottom:1px solid #8883}
+td:first-child,th:first-child{text-align:left}
+button{padding:12px 16px;border-radius:8px;border:0;background:#2563eb;color:#fff;font-size:1rem}
+.ok{color:#16a34a;font-weight:700}.bad{color:#dc2626;font-weight:700}
+</style></head><body>
 
-body {
-  margin: 0;
-  padding: 20px;
-  background: #111219;
-  color: white;
-  font-family: Arial, sans-serif;
-}
+<div class="card"><h2>Connection</h2>
+<button onclick="connect()">Connect ESP32</button> <span id="status">Not connected</span>
+<p>Packets per second: <b id="hz">0</b> (should be about 20)</p></div>
 
-main {
-  max-width: 900px;
-  margin: auto;
-}
+<div class="card"><h2>Sensors</h2>
+<table><thead><tr><th>Sensor</th><th>Sagittal °</th><th>Lateral °</th><th>Status</th></tr></thead>
+<tbody id="sens"></tbody></table>
+<p style="font-size:.85rem">"NO DATA" = the sensor returned nothing (exactly 180 / 180). Check its wiring and power.</p></div>
 
-h1 {
-  margin-bottom: 5px;
-}
-
-.subtitle {
-  color: #aaa;
-}
-
-button {
-  padding: 12px 18px;
-  border: none;
-  border-radius: 10px;
-  background: #b69cff;
-  color: #171321;
-  font-weight: bold;
-  margin: 12px 8px 16px 0;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.4;
-}
-
-.status, .card {
-  background: #1c1e28;
-  border: 1px solid #343644;
-  border-radius: 13px;
-  padding: 15px;
-  margin-bottom: 12px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns:
-    repeat(auto-fit, minmax(210px, 1fr));
-  gap: 10px;
-}
-
-h2 {
-  font-size: 16px;
-  margin-top: 0;
-}
-
-.line {
-  display: flex;
-  justify-content: space-between;
-  border-top: 1px solid #343644;
-  padding: 9px 0;
-}
-
-.value {
-  font-weight: bold;
-  font-variant-numeric: tabular-nums;
-}
-
-.distance {
-  font-size: 30px;
-  font-weight: bold;
-}
-
-small, footer {
-  color: #aaa;
-}
-
-footer {
-  font-size: 13px;
-  margin-top: 15px;
-}
-</style>
-</head>
-
-<body>
-
-<main>
-
-<h1>XForce Sensor Monitor</h1>
-
-<p class="subtitle">
-Live readings from four MPU6050 sensors
-and one ultrasonic sensor.
-</p>
-
-<button id="connect">Connect ESP32</button>
-
-<button id="disconnect" disabled>
-Disconnect
-</button>
-
-<div class="status" id="status">
-Not connected. Use Chrome over HTTPS.
-</div>
-
-<div class="grid">
-
-  <div class="card">
-    <h2>Right Upper Arm <small>CH 2</small></h2>
-
-    <div class="line">
-      Sagittal
-      <b class="value" id="s0">--</b>
-    </div>
-
-    <div class="line">
-      Lateral
-      <b class="value" id="r0">--</b>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Right Wrist <small>CH 3</small></h2>
-
-    <div class="line">
-      Sagittal
-      <b class="value" id="s1">--</b>
-    </div>
-
-    <div class="line">
-      Lateral
-      <b class="value" id="r1">--</b>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Left Upper Arm <small>CH 4</small></h2>
-
-    <div class="line">
-      Sagittal
-      <b class="value" id="s2">--</b>
-    </div>
-
-    <div class="line">
-      Lateral
-      <b class="value" id="r2">--</b>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Left Wrist <small>CH 5</small></h2>
-
-    <div class="line">
-      Sagittal
-      <b class="value" id="s3">--</b>
-    </div>
-
-    <div class="line">
-      Lateral
-      <b class="value" id="r3">--</b>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Ultrasonic Distance</h2>
-
-    <div class="distance">
-      <span id="distance">--</span>
-      <small>mm</small>
-    </div>
-
-    <small>
-      TRIG GPIO5 / ECHO GPIO18
-    </small>
-  </div>
-
-</div>
-
-<footer>
-Angles are accelerometer-based orientation estimates,
-not direct elbow-joint angles.
-</footer>
-
-</main>
+<div class="card"><h2>Elbow and chest</h2>
+<table>
+<tr><th></th><th>Left</th><th>Right</th></tr>
+<tr><td>Elbow angle (°)</td><td id="eL">–</td><td id="eR">–</td></tr>
+</table>
+<p>Chest distance: <b id="dist">–</b> <span id="dstat"></span></p></div>
 
 <script>
+const SVC='12345678-1234-1234-1234-1234567890ab', CHR='12345678-1234-1234-1234-1234567890ac';
+const $=id=>document.getElementById(id);
+const wrap=a=>{while(a>180)a-=360;while(a<-180)a+=360;return a};
+const NAMES=['L upper arm (ch 2)','L wrist (ch 3)','R upper arm (ch 4)','R wrist (ch 5)'];
+$('sens').innerHTML=NAMES.map((n,i)=>`<tr><td>${n}</td><td id="s${i}">–</td><td id="l${i}">–</td><td id="t${i}">–</td></tr>`).join('');
+let count=0;
+setInterval(()=>{$('hz').textContent=count;count=0},1000);
 
-// BLE UUIDs must match ESP32 code
-
-const SERVICE_UUID =
-"12345678-1234-1234-1234-1234567890ab";
-
-const CHARACTERISTIC_UUID =
-"12345678-1234-1234-1234-1234567890ac";
-
-let device = null;
-let characteristic = null;
-
-const status =
-document.getElementById("status");
-
-const connectBtn =
-document.getElementById("connect");
-
-const disconnectBtn =
-document.getElementById("disconnect");
-
-
-// ---------------- RECEIVE BLE DATA ----------------
-
-function receiveData(event) {
-
-  const data = event.target.value;
-
-  if (data.byteLength !== 18) {
-    status.textContent =
-      "Unexpected packet length: " + data.byteLength;
-    return;
-  }
-
-  // Four MPU6050 sensors
-  for (let i = 0; i < 4; i++) {
-
-    const base = i * 4;
-
-    const sagittal =
-      data.getInt16(base, true) / 100;
-
-    const lateral =
-      data.getInt16(base + 2, true) / 100;
-
-    document.getElementById("s" + i).textContent =
-      sagittal.toFixed(1) + "°";
-
-    document.getElementById("r" + i).textContent =
-      lateral.toFixed(1) + "°";
-  }
-
-  // Ultrasonic distance
-  const distance =
-    data.getUint16(16, true);
-
-  document.getElementById("distance").textContent =
-    distance === 65535 ? "No echo" : distance;
+async function connect(){
+  try{
+    const dev=await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}]});
+    dev.addEventListener('gattserverdisconnected',()=>$('status').textContent='Disconnected');
+    const srv=await dev.gatt.connect();
+    const ch=await (await srv.getPrimaryService(SVC)).getCharacteristic(CHR);
+    await ch.startNotifications();
+    ch.addEventListener('characteristicvaluechanged',e=>onData(e.target.value));
+    $('status').textContent='Connected ✓';
+  }catch(e){$('status').textContent='Error: '+e.message}
 }
 
-
-// ---------------- CONNECT ESP32 ----------------
-
-async function connectESP32() {
-
-  if (!navigator.bluetooth) {
-
-    status.textContent =
-      "Web Bluetooth unavailable. Use Chrome over HTTPS.";
-
-    return;
+function onData(dv){
+  count++;
+  const sag=[],lat=[];
+  for(let i=0;i<4;i++){
+    sag[i]=dv.getInt16(i*4,true)/100;lat[i]=dv.getInt16(i*4+2,true)/100;
+    $('s'+i).textContent=sag[i].toFixed(1);$('l'+i).textContent=lat[i].toFixed(1);
+    const dead=Math.abs(sag[i])>=179.9&&Math.abs(lat[i])>=179.9;
+    $('t'+i).textContent=dead?'NO DATA':'OK';$('t'+i).className=dead?'bad':'ok';
   }
-
-  try {
-
-    status.textContent = "Searching for ESP32...";
-
-    device = await navigator.bluetooth.requestDevice({
-
-      filters: [
-        { services: [SERVICE_UUID] }
-      ]
-
-    });
-
-    device.addEventListener(
-      "gattserverdisconnected",
-      disconnected
-    );
-
-    const server =
-      await device.gatt.connect();
-
-    const service =
-      await server.getPrimaryService(SERVICE_UUID);
-
-    characteristic =
-      await service.getCharacteristic(CHARACTERISTIC_UUID);
-
-    await characteristic.startNotifications();
-
-    characteristic.addEventListener(
-      "characteristicvaluechanged",
-      receiveData
-    );
-
-    connectBtn.disabled = true;
-    disconnectBtn.disabled = false;
-
-    status.textContent =
-      "Connected to " + (device.name || "ESP32");
-
-  } catch (error) {
-
-    status.textContent =
-      "Connection failed: " + error.message;
-  }
+  $('eL').textContent=(180-Math.abs(wrap(sag[0]-sag[1]))).toFixed(0);
+  $('eR').textContent=(180-Math.abs(wrap(sag[2]-sag[3]))).toFixed(0);
+  const d=dv.getUint16(16,true);
+  $('dist').textContent=d+' mm';
+  $('dstat').textContent=d===0?'(no echo yet)':'';
 }
-
-
-// ---------------- DISCONNECT ----------------
-
-function disconnected() {
-
-  characteristic = null;
-
-  connectBtn.disabled = false;
-  disconnectBtn.disabled = true;
-
-  status.textContent = "ESP32 disconnected.";
-}
-
-function disconnectESP32() {
-
-  if (device && device.gatt.connected) {
-    device.gatt.disconnect();
-  } else {
-    disconnected();
-  }
-}
-
-
-// ---------------- BUTTONS ----------------
-
-connectBtn.addEventListener(
-  "click",
-  connectESP32
-);
-
-disconnectBtn.addEventListener(
-  "click",
-  disconnectESP32
-);
-
-</script>
-
-</body>
-</html>
+</script></body></html>
