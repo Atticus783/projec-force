@@ -32,7 +32,7 @@ button.alt{background:#6b7280}
 <table><tr><th>Elbow (°)</th><th>Left</th><th>Right</th></tr>
 <tr><td>Raw</td><td id="rawL">–</td><td id="rawR">–</td></tr>
 <tr><td>Corrected</td><td id="corL">–</td><td id="corR">–</td></tr></table>
-<p>Chest distance: <b id="dist">–</b> mm</p></div>
+<p>Chest distance: <b id="dist">–</b> mm (0 = no echo)</p></div>
 
 <div class="card"><h2>2 · Perfect push-ups (10 s)</h2>
 <div>Tap Record, get into plank (5 s), then do 2–3 slow, perfect push-ups (5 s).</div>
@@ -51,6 +51,11 @@ button.alt{background:#6b7280}
 <div class="bar"><div id="prog"></div></div></div>
 
 <div class="card"><h2>4 · Training</h2>
+<div>Tolerance around perfect push-up: ±<b id="tolVal">15</b>°</div>
+<input type="range" id="tol" min="5" max="30" value="15" oninput="setTol(this.value)" style="width:100%">
+<table><tr><th>Accepted (°)</th><th>Bottom: at most</th><th>Top: at least</th></tr>
+<tr><td>Left</td><td id="aLb">–</td><td id="aLt">–</td></tr>
+<tr><td>Right</td><td id="aRb">–</td><td id="aRt">–</td></tr></table>
 <div id="light" class="light idle">Press Start training</div>
 <div>Good reps: <span id="repsGood">0</span> &nbsp; Bad reps: <b id="repsBad">0</b></div>
 <button id="tbtn" onclick="toggleTrain()">Start training</button>
@@ -59,8 +64,8 @@ button.alt{background:#6b7280}
 
 <script>
 // ===== Settings you can change =====
-const TOL=10;   // degrees of allowed error at the top and bottom of a rep
-const BAL=15;   // max allowed difference between left and right elbow
+let TOL=15;      // degrees of allowed error at top/bottom (set by the slider)
+const BAL=20;    // max allowed difference between left and right elbow
 // ===================================
 const SVC='12345678-1234-1234-1234-1234567890ab', CHR='12345678-1234-1234-1234-1234567890ac';
 const $=id=>document.getElementById(id);
@@ -111,9 +116,20 @@ function onData(dv){
   }catch(e){$('err').textContent='Error: '+e.message}
 }
 
+// ---------- Tolerance range ----------
+function setTol(v){TOL=+v;$('tolVal').textContent=v;localStorage.setItem('pushupTol',v);showRange()}
+function showRange(){
+  if(!perfect)return;
+  for(const k of['L','R']){
+    $('a'+k+'b').textContent=Math.round(fix(k,perfect[k].bot)+TOL);   // elbow must get down to this or lower
+    $('a'+k+'t').textContent=Math.round(fix(k,perfect[k].top)-TOL);   // elbow must get up to this or higher
+  }
+}
+
 // ---------- Perfect push-ups ----------
 function showPerfect(){
   for(const k of['L','R']){$('r'+k+'b').textContent=perfect[k].bot;$('r'+k+'t').textContent=perfect[k].top}
+  showRange();
 }
 function startRec(){
   if(!connected){alert('Connect first');return}
@@ -162,7 +178,7 @@ function finishCal(){
     if(Math.max(...m)-Math.min(...m)<30){$('calMsg').textContent=SIDE[k].n+' arm did not move in the last 5 s – retry';return}
   }
   stand=st;localStorage.setItem('pushupStand',JSON.stringify(st));
-  $('calMsg').textContent='Calibration done ✓';$('prog').style.width='100%';
+  $('calMsg').textContent='Calibration done ✓';$('prog').style.width='100%';showRange();
 }
 
 // ---------- Training ----------
@@ -200,8 +216,8 @@ function train(){
     live.push(desc?`Bend your ${n} arm more to match the other`:`Straighten your ${n} arm to match the other`);
   }
 
-  // rep state machine
-  if(rep.state==='top'&&avg<topAvg-2*TOL){rep.state='down';rep.min={L:e.L,R:e.R}}
+  // rep state machine (start threshold is always 15° below the end threshold)
+  if(rep.state==='top'&&avg<topAvg-TOL-15){rep.state='down';rep.min={L:e.L,R:e.R}}
   if(rep.state==='down'){
     for(const k in SIDE)rep.min[k]=Math.min(rep.min[k],e[k]);
     if(avg>=topAvg-TOL){                                // back at the top: judge the rep
@@ -219,6 +235,8 @@ function train(){
 }
 
 // ---------- load saved data ----------
-try{const p=JSON.parse(localStorage.getItem('pushupPerfect'));if(p&&p.L&&p.R){perfect=p;showPerfect();$('recMsg').textContent='Saved reference loaded ✓'}}catch(e){}
+try{const t=localStorage.getItem('pushupTol');if(t){TOL=+t;$('tol').value=t;$('tolVal').textContent=t}}catch(e){}
+try{const p=JSON.parse(localStorage.getItem('pushupPerfect'));if(p&&p.L&&p.R){perfect=p;$('recMsg').textContent='Saved reference loaded ✓'}}catch(e){}
 try{const s=JSON.parse(localStorage.getItem('pushupStand'));if(s&&s.L&&s.R){stand=s;$('calMsg').textContent='Saved calibration loaded ✓'}}catch(e){}
+if(perfect)showPerfect();
 </script></body></html>
