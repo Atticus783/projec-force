@@ -59,7 +59,10 @@ input[type=range]{accent-color:var(--lime)}
 </div>
 
 <div class="card"><h2>1 · Connection</h2>
-<button onclick="connect()">Connect ESP32</button> <span id="conn">Not connected</span>
+<button onclick="connect(false)">Connect ESP32</button>
+<button class="alt" onclick="connect(true)">Show all devices</button>
+<button class="alt" onclick="disconnect()">Disconnect</button>
+<div><b id="conn">Not connected</b></div>
 <p>Packets per second: <b id="hz">0</b> <span id="err" class="badt"></span></p></div>
 
 <div class="card"><h2>Live sensors</h2>
@@ -74,9 +77,10 @@ input[type=range]{accent-color:var(--lime)}
 <div>Tap Record, get into plank (5 s), then do 2–3 slow, perfect push-ups (5 s).</div>
 <button onclick="startRec()">Record perfect push-ups</button>
 <div id="recMsg">Not recorded</div>
-<table><tr><th>Raw elbow (°)</th><th>Bottom</th><th>Top</th></tr>
-<tr><td>Left</td><td id="rLb">–</td><td id="rLt">–</td></tr>
-<tr><td>Right</td><td id="rRb">–</td><td id="rRt">–</td></tr></table></div>
+<table><tr><th>Recorded</th><th>Bottom</th><th>Top</th></tr>
+<tr><td>Left elbow (°)</td><td id="rLb">–</td><td id="rLt">–</td></tr>
+<tr><td>Right elbow (°)</td><td id="rRb">–</td><td id="rRt">–</td></tr>
+<tr><td>Chest height (mm)</td><td id="rDb">–</td><td id="rDt">–</td></tr></table></div>
 
 <div class="card"><h2>3 · Standing calibration (15 s)</h2>
 <div>0–5 s: arms straight out in front, fully straight.<br>
@@ -89,9 +93,10 @@ input[type=range]{accent-color:var(--lime)}
 <div class="card"><h2>4 · Training</h2>
 <div>Tolerance around perfect push-up: ±<b id="tolVal">15</b>°</div>
 <input type="range" id="tol" min="5" max="30" value="15" oninput="setTol(this.value)" style="width:100%">
-<table><tr><th>Accepted (°)</th><th>Bottom: at most</th><th>Top: at least</th></tr>
-<tr><td>Left</td><td id="aLb">–</td><td id="aLt">–</td></tr>
-<tr><td>Right</td><td id="aRb">–</td><td id="aRt">–</td></tr></table>
+<table><tr><th>Accepted</th><th>Bottom: at most</th><th>Top: at least</th></tr>
+<tr><td>Left (°)</td><td id="aLb">–</td><td id="aLt">–</td></tr>
+<tr><td>Right (°)</td><td id="aRb">–</td><td id="aRt">–</td></tr>
+<tr><td>Chest (mm)</td><td id="aDb">–</td><td id="aDt">–</td></tr></table>
 <div id="light" class="light idle">Press Start training</div>
 <div>Good reps: <span id="repsGood">0</span> &nbsp; Bad reps: <b id="repsBad">0</b></div>
 <button id="tbtn" onclick="toggleTrain()">Start training</button>
@@ -114,6 +119,8 @@ const pc=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Ma
 let S=[{sag:0,lat:0},{sag:0,lat:0},{sag:0,lat:0},{sag:0,lat:0}];
 let dist=0, connected=false, mode='idle', stand=null, perfect=null, count=0;
 let rec=null, cal=null;
+let dHist=[], zeroN=0;   // last valid chest readings (for a steady median)
+let bleDev=null, retry=0, manual=false;
 
 window.onerror=m=>{$('err').textContent='Error: '+m};
 setInterval(()=>{$('hz').textContent=count;count=0},1000);
@@ -123,18 +130,59 @@ $('sens').innerHTML=NAMES.map((n,i)=>`<tr><td>${n}</td><td id="s${i}">–</td><t
 const rawE=k=>{const {u,w}=SIDE[k];return 180-Math.abs(wrap(S[u].sag-S[w].sag))};
 // standing calibration: your "straight" reading becomes 180°, your "bent" reading becomes 90°
 const fix=(k,r)=>stand?90+(r-stand[k].bent)*90/(stand[k].straight-stand[k].bent):r;
+// chest height: median of the last 5 valid readings (0 = no echo, ignored)
+const medDist=()=>{const a=[...dHist].sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:0};
+// allowed chest-height error in mm: a share of your recorded range, linked to the tolerance slider
+const dTol=()=>perfect&&perfect.d?(perfect.d.top-perfect.d.bot)*TOL/60:0;
 
 // ---------- Bluetooth ----------
-async function connect(){
+// connect(false): lists devices named PushupCoach or with our service
+// connect(true):  lists every nearby Bluetooth device (fallback if the list is empty)
+async function connect(all){
+  $('conn').textContent='Tapped – opening Bluetooth…';
   try{
-    const dev=await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}]});
-    dev.addEventListener('gattserverdisconnected',()=>{connected=false;mode='idle';$('conn').textContent='Disconnected'});
-    const srv=await dev.gatt.connect();
-    const ch=await (await srv.getPrimaryService(SVC)).getCharacteristic(CHR);
-    await ch.startNotifications();
-    ch.addEventListener('characteristicvaluechanged',e=>onData(e.target.value));
-    connected=true;$('conn').textContent='Connected ✓';
-  }catch(e){$('conn').textContent='Error: '+e.message}
+    if(!window.isSecureContext)throw new Error('Open the page with https://');
+    if(!navigator.bluetooth)throw new Error('This browser has no Web Bluetooth – use Chrome on Android (Bluefy on iPhone)');
+    const dev=await navigator.bluetooth.requestDevice(all
+      ?{acceptAllDevices:true,optionalServices:[SVC]}
+      :{filters:[{services:[SVC]},{name:'PushupCoach'}],optionalServices:[SVC]});
+    bleDev=dev;retry=0;manual=false;
+    dev.addEventListener('gattserverdisconnected',onDrop);
+    await link();
+  }catch(e){
+    let hint='';
+    try{if(navigator.bluetooth&&navigator.bluetooth.getAvailability&&!(await navigator.bluetooth.getAvailability()))hint=' (Bluetooth seems to be off)'}catch(_){}
+    $('conn').textContent=(e.name==='NotFoundError'?'No device chosen – ':'Error: ')+e.message+hint;
+  }
+}
+
+async function link(){                                  // connect to the chosen device and start the data stream
+  $('conn').textContent='Connecting…';
+  const srv=await bleDev.gatt.connect();
+  const ch=await (await srv.getPrimaryService(SVC)).getCharacteristic(CHR);
+  await ch.startNotifications();
+  ch.addEventListener('characteristicvaluechanged',e=>onData(e.target.value));
+  connected=true;retry=0;
+  $('conn').textContent='Connected ✓';
+}
+
+async function onDrop(){                                // connection lost: try again without a new popup
+  connected=false;mode='idle';$('tbtn').textContent='Start training';
+  if(manual||!bleDev)return;
+  while(retry<5&&!connected){
+    retry++;
+    $('conn').textContent='Lost connection – retry '+retry+'/5…';
+    await new Promise(r=>setTimeout(r,2000));
+    try{await link();return}catch(e){}
+  }
+  if(!connected)$('conn').textContent='Disconnected – tap Connect ESP32';
+}
+
+function disconnect(){
+  manual=true;
+  if(bleDev&&bleDev.gatt&&bleDev.gatt.connected)bleDev.gatt.disconnect();
+  connected=false;mode='idle';
+  $('conn').textContent='Disconnected';
 }
 
 function onData(dv){
@@ -147,6 +195,8 @@ function onData(dv){
     $('t'+i).textContent=dead?'NO DATA':'OK';$('t'+i).className=dead?'badt':'okt';
   }
   dist=dv.getUint16(16,true);$('dist').textContent=dist;
+  if(dist>0){dHist.push(dist);if(dHist.length>5)dHist.shift();zeroN=0}
+  else if(++zeroN>=5)dHist=[];                          // no echo for 5 frames: forget old readings
   for(const k in SIDE){const r=rawE(k);$('raw'+k).textContent=r.toFixed(0);$('cor'+k).textContent=fix(k,r).toFixed(0)}
   try{
     if(mode==='rec')recStep(); else if(mode==='cal')calStep(); else if(mode==='train')train();
@@ -161,76 +211,22 @@ function showRange(){
     $('a'+k+'b').textContent=Math.round(fix(k,perfect[k].bot)+TOL);   // elbow must get down to this or lower
     $('a'+k+'t').textContent=Math.round(fix(k,perfect[k].top)-TOL);   // elbow must get up to this or higher
   }
+  $('aDb').textContent=perfect.d?Math.round(perfect.d.bot+dTol()):'off';   // chest must get this close or closer
+  $('aDt').textContent='–';
 }
 
 // ---------- Perfect push-ups ----------
 function showPerfect(){
   for(const k of['L','R']){$('r'+k+'b').textContent=perfect[k].bot;$('r'+k+'t').textContent=perfect[k].top}
+  $('rDb').textContent=perfect.d?perfect.d.bot:'off';$('rDt').textContent=perfect.d?perfect.d.top:'off';
   showRange();
 }
 function startRec(){
   if(!connected){alert('Connect first');return}
   if(mode==='train')toggleTrain();
-  rec={t0:performance.now(),L:[],R:[]};mode='rec';
+  rec={t0:performance.now(),L:[],R:[],D:[]};mode='rec';
 }
 function recStep(){
   const t=(performance.now()-rec.t0)/1000;
   if(t<5)$('recMsg').textContent='Get into plank… '+Math.ceil(5-t);
-  else if(t<10){$('recMsg').textContent='GO – perfect push-ups… '+Math.ceil(10-t);rec.L.push(rawE('L'));rec.R.push(rawE('R'))}
-  else finishRec();
-}
-function finishRec(){
-  mode='idle';
-  if(rec.L.length<40){$('recMsg').textContent='Too little data – retry';return}
-  const p={};
-  for(const k of['L','R']){
-    p[k]={bot:+pc(rec[k],0.05).toFixed(1),top:+pc(rec[k],0.95).toFixed(1)};   // 5th/95th percentile ignores spikes
-    if(p[k].top-p[k].bot<30){$('recMsg').textContent=SIDE[k].n+' arm barely moved – retry';return}
-  }
-  perfect=p;localStorage.setItem('pushupPerfect',JSON.stringify(p));
-  showPerfect();$('recMsg').textContent='Saved ✓';
-}
-
-// ---------- Standing calibration ----------
-function startCal(){
-  if(!connected){alert('Connect first');return}
-  if(mode==='train')toggleTrain();
-  cal={t0:performance.now(),a:{L:[],R:[]},b:{L:[],R:[]},m:{L:[],R:[]}};mode='cal';
-}
-function calStep(){
-  const t=(performance.now()-cal.t0)/1000, ph=Math.min(2,Math.floor(t/5));
-  $('calMsg').textContent=['Arms STRAIGHT out in front','Elbows BENT 90°, forearms level','Move slowly between the two'][ph]+' ('+Math.max(0,Math.ceil(15-t))+'s)';
-  $('prog').style.width=Math.min(100,t/15*100)+'%';
-  for(const k in SIDE)(ph===0?cal.a:ph===1?cal.b:cal.m)[k].push(rawE(k));
-  if(t>=15)finishCal();
-}
-function finishCal(){
-  mode='idle';
-  const avg=a=>a.reduce((s,x)=>s+x,0)/a.length, st={};
-  for(const k in SIDE){
-    const a=cal.a[k].slice(20), b=cal.b[k].slice(20), m=cal.m[k];   // skip first 1 s of each hold
-    if(a.length<20||b.length<20){$('calMsg').textContent='Not enough data – retry';return}
-    st[k]={straight:avg(a),bent:avg(b)};
-    if(st[k].straight-st[k].bent<30){$('calMsg').textContent=SIDE[k].n+' arm: straight and bent are too close – retry';return}
-    if(Math.max(...m)-Math.min(...m)<30){$('calMsg').textContent=SIDE[k].n+' arm did not move in the last 5 s – retry';return}
-  }
-  stand=st;localStorage.setItem('pushupStand',JSON.stringify(st));
-  $('calMsg').textContent='Calibration done ✓';$('prog').style.width='100%';showRange();
-}
-
-// ---------- Training ----------
-let rep, cnt={}, flash={msgs:[],until:0}, goodN=0, badN=0;
-const resetRep=()=>{rep={state:'top',prev:180,min:{L:180,R:180}}};
-resetRep();
-const chk=(key,c)=>{cnt[key]=c?(cnt[key]||0)+1:0;return cnt[key]>=5};   // must hold ~250 ms
-const addLog=s=>{$('logBox').innerHTML=`<div>${s}</div>`+$('logBox').innerHTML};
-
-function setLight(msgs,idleText){
-  const el=$('light');
-  if(idleText){el.className='light idle';el.textContent=idleText;return}
-  if(msgs.length){el.className='light bad';el.innerHTML=msgs.join('<br>')}
-  else{el.className='light ok';el.textContent='Good form ✓'}
-}
-function toggleTrain(){
-  if(mode==='train'){mode='idle';$('tbtn').textContent='Start training';setLight([],'Training stopped');return}
-  if(!connected){alert('Connect first');return}
+  else
