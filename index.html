@@ -3,80 +3,53 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>X Force</title>
 <style>
-:root{color-scheme:dark;--lime:#7dff2a;--lime2:#b6ff5a;--red:#ff3b30;--metal:#2b2f2c;--metal2:#3d423e}
-body{margin:0;padding:12px 18px 12px 12px;max-width:560px;margin:auto;min-height:100vh;color:#e6ffe0;
-  font-family:ui-monospace,"Cascadia Mono","Courier New",monospace;letter-spacing:.02em;
-  background:
-    linear-gradient(rgba(125,255,42,.05) 1px,transparent 1px) 0 0/28px 28px,
-    linear-gradient(90deg,rgba(125,255,42,.05) 1px,transparent 1px) 0 0/28px 28px,
-    radial-gradient(ellipse at 50% -10%,rgba(125,255,42,.22),transparent 55%),
-    radial-gradient(ellipse at 100% 100%,rgba(60,120,255,.12),transparent 50%),
-    #070907;
-  background-attachment:fixed}
-body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.10) 0 1px,transparent 1px 3px)}
-body::after{content:"";position:fixed;right:0;top:0;bottom:0;width:9px;pointer-events:none;z-index:49;
-  background:repeating-linear-gradient(135deg,rgba(125,255,42,.6) 0 3px,transparent 3px 10px)}
+:root{color-scheme:dark;--lime:#a3e635;--bg:#14171a;--panel:#1d2227;--line:#343b42;--text:#f1f4f6;--muted:#a9b3bb;--red:#ef4444;--green:#22c55e}
+body{margin:0;padding:12px;max-width:560px;margin:auto;min-height:100vh;
+  background:var(--bg);color:var(--text);
+  font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 
-/* title block */
-.hero{display:flex;align-items:center;gap:12px;margin:6px 0 4px;padding:10px 12px;
-  border:1px solid var(--lime);border-radius:6px 22px 6px 22px;
-  background:linear-gradient(180deg,#171d17,#0b0f0b);box-shadow:0 0 14px rgba(125,255,42,.35)}
-.badge{font:700 2rem Impact,"Arial Black",sans-serif;color:var(--lime);border:2px solid var(--lime);
-  padding:0 10px;border-radius:6px;box-shadow:inset 0 0 10px rgba(125,255,42,.4);text-shadow:0 0 8px var(--lime)}
-.hero h1{margin:0;font:italic 900 1.9rem Impact,"Arial Black",sans-serif;letter-spacing:.12em;color:#fff;
-  text-shadow:0 0 12px var(--lime)}
-.sub{font-size:.62rem;color:var(--lime);letter-spacing:.15em;margin-top:2px}
-.slash{margin-left:auto;width:54px;height:22px;
+/* title */
+.hero{display:flex;align-items:center;gap:12px;margin:6px 0 12px;padding:12px 14px;
+  background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--lime);
+  border-radius:4px 14px 4px 14px}
+.badge{font-weight:800;font-size:1.5rem;color:#111;background:var(--lime);padding:2px 10px;border-radius:4px}
+.hero h1{margin:0;font-size:1.8rem;font-weight:900;font-style:italic;letter-spacing:.06em}
+.sub{font-size:.75rem;color:var(--muted);letter-spacing:.08em;margin-top:2px}
+.slash{margin-left:auto;width:48px;height:18px;opacity:.8;
   background:repeating-linear-gradient(120deg,var(--lime) 0 3px,transparent 3px 9px)}
 
-/* panels with corner bolts */
-.card{position:relative;margin:12px 0;padding:14px 12px 12px;
-  border:1px solid var(--lime);border-radius:6px 18px 6px 18px;
-  background:
-    radial-gradient(circle at 9px 9px,#000 0 2.5px,#6c746c 3px 4px,transparent 4.5px),
-    radial-gradient(circle at calc(100% - 9px) 9px,#000 0 2.5px,#6c746c 3px 4px,transparent 4.5px),
-    radial-gradient(circle at 9px calc(100% - 9px),#000 0 2.5px,#6c746c 3px 4px,transparent 4.5px),
-    radial-gradient(circle at calc(100% - 9px) calc(100% - 9px),#000 0 2.5px,#6c746c 3px 4px,transparent 4.5px),
-    linear-gradient(180deg,#121712,#0a0d0a);
-  box-shadow:0 0 10px rgba(125,255,42,.3),inset 0 0 16px rgba(125,255,42,.06)}
-h2{display:inline-block;margin:0 0 10px;padding:3px 10px;font-size:.85rem;color:var(--lime);
-  text-transform:uppercase;letter-spacing:.12em;border:1px solid #5a625a;border-radius:3px;
-  background:linear-gradient(var(--metal2),var(--metal));text-shadow:0 0 6px var(--lime)}
+/* panels */
+.card{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--lime);
+  border-radius:4px 14px 4px 14px;padding:14px;margin:12px 0}
+h2{margin:0 0 10px;font-size:1rem;color:var(--lime);text-transform:uppercase;letter-spacing:.06em}
 
-table{width:100%;border-collapse:collapse;font-size:.9rem;margin-bottom:6px}
-td,th{padding:5px;text-align:right;border-bottom:1px solid rgba(125,255,42,.22)}
+table{width:100%;border-collapse:collapse;font-size:.95rem;margin-bottom:8px}
+td,th{padding:7px 4px;text-align:right;border-bottom:1px solid var(--line)}
 td:first-child,th:first-child{text-align:left}
-th{color:var(--lime);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
+th{color:var(--muted);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 
-button{background:rgba(125,255,42,.12);color:var(--lime);border:1px solid var(--lime);border-radius:3px;
-  font-family:inherit;font-size:.9rem;text-transform:uppercase;letter-spacing:.08em;
-  padding:10px 14px;margin:4px 4px 4px 0;cursor:pointer;box-shadow:0 0 8px rgba(125,255,42,.45)}
-button:active{background:var(--lime);color:#000}
-button.alt{background:linear-gradient(var(--metal2),var(--metal));color:#cfd6cf;border-color:#6a726a;box-shadow:none}
-button.alt:active{background:#cfd6cf;color:#000}
+button{background:var(--lime);color:#111;border:0;border-radius:6px;font:inherit;font-weight:700;
+  padding:11px 16px;margin:4px 6px 4px 0;cursor:pointer}
+button:active{background:#d9f99d}
+button.alt{background:#3a4148;color:var(--text)}
+button.alt:active{background:#4b545c}
 input[type=range]{accent-color:var(--lime)}
 
-/* segmented bar like the HP / SP bars */
-.bar{height:12px;background:#0a0d0a;border:1px solid var(--lime);margin-top:6px;overflow:hidden}
-#prog{height:100%;width:0;background:repeating-linear-gradient(90deg,var(--lime) 0 8px,transparent 8px 11px);
-  box-shadow:0 0 10px var(--lime)}
+.bar{height:10px;background:#0f1215;border:1px solid var(--line);border-radius:5px;overflow:hidden;margin-top:8px}
+#prog{height:100%;width:0;background:var(--lime)}
 
 /* status light */
-.light{padding:22px 12px;text-align:center;font-size:1.3rem;font-weight:700;margin:8px 0;border-radius:4px 14px 4px 14px;
-  text-transform:uppercase;letter-spacing:.06em}
-.idle{background:linear-gradient(var(--metal2),var(--metal));color:#9aa39a;border:1px solid #5a625a}
-.ok{background:rgba(125,255,42,.14);color:var(--lime);border:1px solid var(--lime);
-  box-shadow:0 0 20px rgba(125,255,42,.6);text-shadow:0 0 8px var(--lime)}
-.bad{background:rgba(255,59,48,.14);color:var(--red);border:1px solid var(--red);
-  box-shadow:0 0 20px rgba(255,59,48,.6);text-shadow:0 0 8px var(--red);animation:pulse 1s infinite}
-@keyframes pulse{50%{box-shadow:0 0 34px rgba(255,59,48,.95)}}
+.light{padding:22px 12px;text-align:center;font-size:1.3rem;font-weight:800;margin:10px 0;
+  border-radius:4px 14px 4px 14px}
+.idle{background:#3a4148;color:#fff}
+.ok{background:var(--green);color:#052e16}
+.bad{background:var(--red);color:#fff}
 
-.okt{color:var(--lime);font-weight:700;text-shadow:0 0 6px var(--lime)}
-.badt{color:var(--red);font-weight:700;text-shadow:0 0 6px var(--red)}
-#repsGood{font:700 2.4rem Impact,"Arial Black",sans-serif;color:var(--lime);text-shadow:0 0 12px var(--lime)}
-#recMsg,#calMsg{font-weight:700;margin:6px 0;color:var(--lime2)}
-#logBox{font-size:.85rem;max-height:140px;overflow:auto;color:#b9e8a8}
+.okt{color:var(--green);font-weight:700}
+.badt{color:#f87171;font-weight:700}
+#repsGood{font-size:2.4rem;font-weight:800;color:var(--lime)}
+#recMsg,#calMsg{font-weight:700;margin:8px 0;color:#d9f99d}
+#logBox{font-size:.9rem;max-height:140px;overflow:auto;color:var(--text)}
 </style></head><body>
 
 <div class="hero">
@@ -85,8 +58,11 @@ input[type=range]{accent-color:var(--lime)}
   <div class="slash"></div>
 </div>
 
-<div class="card"><h2>1 · Connection</h2><br>
-<button onclick="connect()">Connect ESP32</button> <span id="conn">Not connected</span>
+<div class="card"><h2>1 · Connection</h2>
+<button onclick="connect(false)">Connect ESP32</button>
+<button class="alt" onclick="connect(true)">Show all devices</button>
+<button class="alt" onclick="disconnect()">Disconnect</button>
+<div><b id="conn">Not connected</b></div>
 <p>Packets per second: <b id="hz">0</b> <span id="err" class="badt"></span></p></div>
 
 <div class="card"><h2>Live sensors</h2>
@@ -101,9 +77,10 @@ input[type=range]{accent-color:var(--lime)}
 <div>Tap Record, get into plank (5 s), then do 2–3 slow, perfect push-ups (5 s).</div>
 <button onclick="startRec()">Record perfect push-ups</button>
 <div id="recMsg">Not recorded</div>
-<table><tr><th>Raw elbow (°)</th><th>Bottom</th><th>Top</th></tr>
-<tr><td>Left</td><td id="rLb">–</td><td id="rLt">–</td></tr>
-<tr><td>Right</td><td id="rRb">–</td><td id="rRt">–</td></tr></table></div>
+<table><tr><th>Recorded</th><th>Bottom</th><th>Top</th></tr>
+<tr><td>Left elbow (°)</td><td id="rLb">–</td><td id="rLt">–</td></tr>
+<tr><td>Right elbow (°)</td><td id="rRb">–</td><td id="rRt">–</td></tr>
+<tr><td>Chest height (mm)</td><td id="rDb">–</td><td id="rDt">–</td></tr></table></div>
 
 <div class="card"><h2>3 · Standing calibration (15 s)</h2>
 <div>0–5 s: arms straight out in front, fully straight.<br>
@@ -116,9 +93,10 @@ input[type=range]{accent-color:var(--lime)}
 <div class="card"><h2>4 · Training</h2>
 <div>Tolerance around perfect push-up: ±<b id="tolVal">15</b>°</div>
 <input type="range" id="tol" min="5" max="30" value="15" oninput="setTol(this.value)" style="width:100%">
-<table><tr><th>Accepted (°)</th><th>Bottom: at most</th><th>Top: at least</th></tr>
-<tr><td>Left</td><td id="aLb">–</td><td id="aLt">–</td></tr>
-<tr><td>Right</td><td id="aRb">–</td><td id="aRt">–</td></tr></table>
+<table><tr><th>Accepted</th><th>Bottom: at most</th><th>Top: at least</th></tr>
+<tr><td>Left (°)</td><td id="aLb">–</td><td id="aLt">–</td></tr>
+<tr><td>Right (°)</td><td id="aRb">–</td><td id="aRt">–</td></tr>
+<tr><td>Chest (mm)</td><td id="aDb">–</td><td id="aDt">–</td></tr></table>
 <div id="light" class="light idle">Press Start training</div>
 <div>Good reps: <span id="repsGood">0</span> &nbsp; Bad reps: <b id="repsBad">0</b></div>
 <button id="tbtn" onclick="toggleTrain()">Start training</button>
@@ -141,6 +119,8 @@ const pc=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Ma
 let S=[{sag:0,lat:0},{sag:0,lat:0},{sag:0,lat:0},{sag:0,lat:0}];
 let dist=0, connected=false, mode='idle', stand=null, perfect=null, count=0;
 let rec=null, cal=null;
+let dHist=[], zeroN=0;   // last valid chest readings (for a steady median)
+let bleDev=null, retry=0, manual=false;
 
 window.onerror=m=>{$('err').textContent='Error: '+m};
 setInterval(()=>{$('hz').textContent=count;count=0},1000);
@@ -150,18 +130,59 @@ $('sens').innerHTML=NAMES.map((n,i)=>`<tr><td>${n}</td><td id="s${i}">–</td><t
 const rawE=k=>{const {u,w}=SIDE[k];return 180-Math.abs(wrap(S[u].sag-S[w].sag))};
 // standing calibration: your "straight" reading becomes 180°, your "bent" reading becomes 90°
 const fix=(k,r)=>stand?90+(r-stand[k].bent)*90/(stand[k].straight-stand[k].bent):r;
+// chest height: median of the last 5 valid readings (0 = no echo, ignored)
+const medDist=()=>{const a=[...dHist].sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:0};
+// allowed chest-height error in mm: a share of your recorded range, linked to the tolerance slider
+const dTol=()=>perfect&&perfect.d?(perfect.d.top-perfect.d.bot)*TOL/60:0;
 
 // ---------- Bluetooth ----------
-async function connect(){
+// connect(false): lists devices named PushupCoach or with our service
+// connect(true):  lists every nearby Bluetooth device (fallback if the list is empty)
+async function connect(all){
+  $('conn').textContent='Tapped – opening Bluetooth…';
   try{
-    const dev=await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}]});
-    dev.addEventListener('gattserverdisconnected',()=>{connected=false;mode='idle';$('conn').textContent='Disconnected'});
-    const srv=await dev.gatt.connect();
-    const ch=await (await srv.getPrimaryService(SVC)).getCharacteristic(CHR);
-    await ch.startNotifications();
-    ch.addEventListener('characteristicvaluechanged',e=>onData(e.target.value));
-    connected=true;$('conn').textContent='Connected ✓';
-  }catch(e){$('conn').textContent='Error: '+e.message}
+    if(!window.isSecureContext)throw new Error('Open the page with https://');
+    if(!navigator.bluetooth)throw new Error('This browser has no Web Bluetooth – use Chrome on Android (Bluefy on iPhone)');
+    const dev=await navigator.bluetooth.requestDevice(all
+      ?{acceptAllDevices:true,optionalServices:[SVC]}
+      :{filters:[{services:[SVC]},{name:'PushupCoach'}],optionalServices:[SVC]});
+    bleDev=dev;retry=0;manual=false;
+    dev.addEventListener('gattserverdisconnected',onDrop);
+    await link();
+  }catch(e){
+    let hint='';
+    try{if(navigator.bluetooth&&navigator.bluetooth.getAvailability&&!(await navigator.bluetooth.getAvailability()))hint=' (Bluetooth seems to be off)'}catch(_){}
+    $('conn').textContent=(e.name==='NotFoundError'?'No device chosen – ':'Error: ')+e.message+hint;
+  }
+}
+
+async function link(){                                  // connect to the chosen device and start the data stream
+  $('conn').textContent='Connecting…';
+  const srv=await bleDev.gatt.connect();
+  const ch=await (await srv.getPrimaryService(SVC)).getCharacteristic(CHR);
+  await ch.startNotifications();
+  ch.addEventListener('characteristicvaluechanged',e=>onData(e.target.value));
+  connected=true;retry=0;
+  $('conn').textContent='Connected ✓';
+}
+
+async function onDrop(){                                // connection lost: try again without a new popup
+  connected=false;mode='idle';$('tbtn').textContent='Start training';
+  if(manual||!bleDev)return;
+  while(retry<5&&!connected){
+    retry++;
+    $('conn').textContent='Lost connection – retry '+retry+'/5…';
+    await new Promise(r=>setTimeout(r,2000));
+    try{await link();return}catch(e){}
+  }
+  if(!connected)$('conn').textContent='Disconnected – tap Connect ESP32';
+}
+
+function disconnect(){
+  manual=true;
+  if(bleDev&&bleDev.gatt&&bleDev.gatt.connected)bleDev.gatt.disconnect();
+  connected=false;mode='idle';
+  $('conn').textContent='Disconnected';
 }
 
 function onData(dv){
@@ -174,6 +195,8 @@ function onData(dv){
     $('t'+i).textContent=dead?'NO DATA':'OK';$('t'+i).className=dead?'badt':'okt';
   }
   dist=dv.getUint16(16,true);$('dist').textContent=dist;
+  if(dist>0){dHist.push(dist);if(dHist.length>5)dHist.shift();zeroN=0}
+  else if(++zeroN>=5)dHist=[];                          // no echo for 5 frames: forget old readings
   for(const k in SIDE){const r=rawE(k);$('raw'+k).textContent=r.toFixed(0);$('cor'+k).textContent=fix(k,r).toFixed(0)}
   try{
     if(mode==='rec')recStep(); else if(mode==='cal')calStep(); else if(mode==='train')train();
@@ -188,22 +211,29 @@ function showRange(){
     $('a'+k+'b').textContent=Math.round(fix(k,perfect[k].bot)+TOL);   // elbow must get down to this or lower
     $('a'+k+'t').textContent=Math.round(fix(k,perfect[k].top)-TOL);   // elbow must get up to this or higher
   }
+  $('aDb').textContent=perfect.d?Math.round(perfect.d.bot+dTol()):'off';   // chest must get this close or closer
+  $('aDt').textContent='–';
 }
 
 // ---------- Perfect push-ups ----------
 function showPerfect(){
   for(const k of['L','R']){$('r'+k+'b').textContent=perfect[k].bot;$('r'+k+'t').textContent=perfect[k].top}
+  $('rDb').textContent=perfect.d?perfect.d.bot:'off';$('rDt').textContent=perfect.d?perfect.d.top:'off';
   showRange();
 }
 function startRec(){
   if(!connected){alert('Connect first');return}
   if(mode==='train')toggleTrain();
-  rec={t0:performance.now(),L:[],R:[]};mode='rec';
+  rec={t0:performance.now(),L:[],R:[],D:[]};mode='rec';
 }
 function recStep(){
   const t=(performance.now()-rec.t0)/1000;
   if(t<5)$('recMsg').textContent='Get into plank… '+Math.ceil(5-t);
-  else if(t<10){$('recMsg').textContent='GO – perfect push-ups… '+Math.ceil(10-t);rec.L.push(rawE('L'));rec.R.push(rawE('R'))}
+  else if(t<10){
+    $('recMsg').textContent='GO – perfect push-ups… '+Math.ceil(10-t);
+    rec.L.push(rawE('L'));rec.R.push(rawE('R'));
+    const d=medDist();if(d>0)rec.D.push(d);
+  }
   else finishRec();
 }
 function finishRec(){
@@ -214,8 +244,13 @@ function finishRec(){
     p[k]={bot:+pc(rec[k],0.05).toFixed(1),top:+pc(rec[k],0.95).toFixed(1)};   // 5th/95th percentile ignores spikes
     if(p[k].top-p[k].bot<30){$('recMsg').textContent=SIDE[k].n+' arm barely moved – retry';return}
   }
+  if(rec.D.length>=20){                                  // chest sensor: needs enough readings and at least 30 mm of travel
+    const lo=pc(rec.D,0.05),hi=pc(rec.D,0.95);
+    if(hi-lo>=30)p.d={bot:Math.round(lo),top:Math.round(hi)};
+  }
   perfect=p;localStorage.setItem('pushupPerfect',JSON.stringify(p));
-  showPerfect();$('recMsg').textContent='Saved ✓';
+  showPerfect();
+  $('recMsg').textContent=p.d?'Saved ✓ (chest sensor used)':'Saved ✓ (no usable chest data – depth check off)';
 }
 
 // ---------- Standing calibration ----------
@@ -247,7 +282,7 @@ function finishCal(){
 
 // ---------- Training ----------
 let rep, cnt={}, flash={msgs:[],until:0}, goodN=0, badN=0;
-const resetRep=()=>{rep={state:'top',prev:180,min:{L:180,R:180}}};
+const resetRep=()=>{rep={state:'top',prev:180,min:{L:180,R:180},dmin:Infinity,upSince:0}};
 resetRep();
 const chk=(key,c)=>{cnt[key]=c?(cnt[key]||0)+1:0;return cnt[key]>=5};   // must hold ~250 ms
 const addLog=s=>{$('logBox').innerHTML=`<div>${s}</div>`+$('logBox').innerHTML};
@@ -264,6 +299,7 @@ function toggleTrain(){
   if(!perfect){alert('Record the perfect push-ups first');return}
   mode='train';resetRep();$('tbtn').textContent='Stop training';
   if(!stand)addLog('No standing calibration – using raw angles');
+  if(!perfect.d)addLog('Chest depth check is off – record the perfect push-ups again with the chest sensor working');
 }
 function resetReps(){goodN=0;badN=0;$('repsGood').textContent=0;$('repsBad').textContent=0;$('logBox').innerHTML='';resetRep()}
 
@@ -281,18 +317,25 @@ function train(){
   }
 
   // rep state machine (start threshold is always 15° below the end threshold)
-  if(rep.state==='top'&&avg<topAvg-TOL-15){rep.state='down';rep.min={L:e.L,R:e.R}}
+  if(rep.state==='top'&&avg<topAvg-TOL-15){rep.state='down';rep.min={L:e.L,R:e.R};rep.dmin=Infinity;rep.upSince=0}
   if(rep.state==='down'){
     for(const k in SIDE)rep.min[k]=Math.min(rep.min[k],e[k]);
-    if(avg>=topAvg-TOL){                                // back at the top: judge the rep
-      rep.state='top';const msgs=[];
-      for(const k in SIDE){
-        if(rep.min[k]>T[k].bot+TOL)msgs.push(`Bend your ${SIDE[k].n} arm more – go lower`);
-        if(e[k]<T[k].top-TOL)msgs.push(`Straighten your ${SIDE[k].n} arm fully`);
+    const dm=medDist();if(dm>0)rep.dmin=Math.min(rep.dmin,dm);     // closest the chest got to the floor
+    if(avg>=topAvg-TOL){                                // arms are coming back to the top
+      if(!rep.upSince)rep.upSince=Date.now();
+      const bothUp=e.L>=T.L.top-TOL&&e.R>=T.R.top-TOL;
+      if(bothUp||Date.now()-rep.upSince>1000){          // judge once BOTH arms are up (or after 1 s)
+        rep.state='top';rep.upSince=0;const msgs=[];
+        for(const k in SIDE){
+          if(rep.min[k]>T[k].bot+TOL)msgs.push(`Bend your ${SIDE[k].n} arm more – go lower`);
+          if(e[k]<T[k].top-TOL)msgs.push(`Straighten your ${SIDE[k].n} arm fully`);
+        }
+        if(perfect.d&&rep.dmin<Infinity&&rep.dmin>perfect.d.bot+dTol())msgs.push('Go lower – chest too far from the floor');
+        const info=`(L min ${rep.min.L.toFixed(0)}, now ${e.L.toFixed(0)} | R min ${rep.min.R.toFixed(0)}, now ${e.R.toFixed(0)})`;
+        if(msgs.length){badN++;$('repsBad').textContent=badN;flash={msgs,until:Date.now()+2500};addLog('Bad rep: '+msgs.join('; ')+' '+info)}
+        else{goodN++;$('repsGood').textContent=goodN;flash={msgs:[],until:Date.now()+800};addLog('Rep '+goodN+' ✓ '+info)}
       }
-      if(msgs.length){badN++;$('repsBad').textContent=badN;flash={msgs,until:Date.now()+2500};addLog('Bad rep: '+msgs.join('; '))}
-      else{goodN++;$('repsGood').textContent=goodN;flash={msgs:[],until:Date.now()+800};addLog('Rep '+goodN+' ✓')}
-    }
+    }else rep.upSince=0;
   }
   rep.prev=avg;
   setLight(Date.now()<flash.until?flash.msgs.concat(live):live);
