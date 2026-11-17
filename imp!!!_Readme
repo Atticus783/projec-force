@@ -1,0 +1,3 @@
+the pcb design in proteus does work but the power supply will be given from a battery 3.7v and a voltage booster to a c or b type usb cable which goes directly into the esp32
+as in the video link. and make ur own pcb design. connecting mpus terminals in parralel to the 3v3 pin of esp. dont make the mistake i did. so plz watch the vid till 
+end to see the mistakes and fixes. :) hope u make it and contact if something is not working. thanks 
