@@ -1,3 +1,5 @@
 the pcb design in proteus does work but the power supply will be given from a battery 3.7v and a voltage booster to a c or b type usb cable which goes directly into the esp32. andmake ur own pcb design.
 connecting mpus terminals in parralel to the 3v3 pin of esp. dont make the mistake i did in proteus.  
+and for hardware use a posture correcting belt and modify it as in the pics and paste 2 mpus on the wrists and 2 on the forearms.
+
  :) hope u make it and contact if something is not working. thanks 
