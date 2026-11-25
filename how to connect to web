@@ -1,0 +1,45 @@
+## Connecting the ESP32 to the web page
+
+The ESP32 sends its readings over Bluetooth Low Energy (BLE), and the web page receives them with the Web Bluetooth feature of the browser. No app and no pairing in the phone's Bluetooth settings are needed.
+
+### What you need
+| Item | Details |
+|---|---|
+| ESP32 | Flashed with `firmware/pushup_v2/pushup_v2.ino` and powered (USB, or battery with a boost converter) |
+| Browser | Chrome or Edge on Android, Windows, macOS or Linux. On iPhone, use the Bluefy browser. Safari and Firefox do not support Web Bluetooth |
+| Page address | Must be `https://` (the GitHub Pages link) or `http://localhost`. A `file://` address will not work |
+| Phone settings | Bluetooth on. Android 12 or newer: allow Chrome the "Nearby devices" permission. Android 11 or older: turn Location on |
+
+### Steps
+1. **Power the ESP32.** If you have the Serial Monitor open at 115200 baud, you should see `PushupCoach BLE READY` and `Advertising started`.
+2. **Close anything else connected to the ESP32.** It accepts one Bluetooth connection at a time, so close the page on any other phone or laptop.
+3. **Open the web app** in Chrome using the HTTPS link.
+4. Tap **Connect ESP32**.
+5. In the popup, choose **PushupCoach** and tap **Pair** (or **Connect**).
+   - If the list is empty, tap **Show all devices** instead and pick **PushupCoach**.
+6. Wait for the status to read **Connected ✓**.
+7. **Check that data is arriving:**
+   - "Packets per second" shows about 20
+   - All four sensors in the Live sensors table say **OK** and their angles change when you move them
+   - Chest distance changes when you move a hand under the ultrasonic sensor
+8. When you finish, tap **Disconnect**. If the connection drops by itself, the page tries again up to 5 times.
+
+### Bluetooth details
+| Item | Value |
+|---|---|
+| Device name | `PushupCoach` |
+| Service UUID | `12345678-1234-1234-1234-1234567890ab` |
+| Characteristic UUID (notify) | `12345678-1234-1234-1234-1234567890ac` |
+| Update rate | About 20 packets per second |
+| Packet size | 18 bytes |
+
+### Troubleshooting
+| Problem | What to try |
+|---|---|
+| Nothing happens when you tap Connect | Use Chrome (not another app's built-in browser), use the `https://` address, and check Bluetooth and Nearby devices permission |
+| The popup does not list PushupCoach | Tap **Show all devices**. Close the page on any other device and restart the ESP32. Check the ESP32 is powered |
+| "Connected" but packets per second is 0 | Disconnect, restart the ESP32, and connect again |
+| A sensor says NO DATA | Check that sensor's wiring and power, and its channel on the multiplexer |
+| Chest distance stays at 0 | No echo: the object is closer than about 2 cm or out of range. Check the ultrasonic wiring |
+| The connection keeps dropping | Check the power supply. A weak battery or loose wire can make the ESP32 or the sensors reset |
+| iPhone | Safari and Chrome on iPhone do not support Web Bluetooth. Use the Bluefy browser |
